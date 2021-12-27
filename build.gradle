@@ -1,0 +1,69 @@
+plugins {
+	id 'java-library'
+	id 'eclipse'
+	id 'com.github.johnrengelman.shadow' version "7.0.0"
+}
+
+repositories {
+	mavenCentral()
+	maven {
+		url "https://repo.spongepowered.org/maven/"
+	}
+	maven {
+		url "https://maven.fabricmc.net/"
+	}
+}
+
+sourceCompatibility = '9'
+targetCompatibility = '9'
+
+version = providerVersion
+group = "com.wildermods"
+archivesBaseName = "provider"
+
+dependencies {
+
+	shadow group: 'org.jetbrains', name: 'intellij-fernflower', version: '1.2.1.16'
+	compileOnly group: 'net.fabricmc', name: 'fabric-loader', version: '0.12.12'
+	shadow group: 'net.oneandone.reflections8', name: 'reflections8', version: '0.11.5'
+	shadow group: 'net.sf.jopt-simple', name: 'jopt-simple', version: '6.0-alpha-3'
+
+	//mixin requirements:
+	compileOnly 'org.spongepowered:mixin:' + mixinVersion
+	compileOnly 'com.google.guava:guava:21.0'
+	compileOnly group: 'com.google.code.gson', name: 'gson', version: '2.8.7'
+	compileOnly group: 'org.ow2.asm', name: 'asm', version: asmVersion
+	compileOnly group: 'org.ow2.asm', name: 'asm-analysis', version: asmVersion
+	compileOnly group: 'org.ow2.asm', name: 'asm-commons', version: asmVersion
+	compileOnly group: 'org.ow2.asm', name: 'asm-tree', version: asmVersion
+	compileOnly group: 'org.ow2.asm', name: 'asm-util', version: asmVersion
+
+}
+
+test {
+	testLogging.showStandardStreams = true
+}
+
+shadowJar {
+	mergeServiceFiles()
+	configurations = [project.configurations.shadow]
+	exclude 'META-INF/LICENSE'
+	exclude 'META-INF/LICENSE.txt'
+	exclude 'META-INF/LICENSsE.txt'
+	exclude 'META-INF/NOTICE'
+	exclude 'META-INF/NOTICE.txt'
+	exclude 'META-INF/DEPENDENCIES'
+	exclude 'LICENSE.txt'
+}
+
+jar {
+	manifest {
+		attributes(
+			'Class-Path': configurations.runtimeClasspath.collect { it.getName() }.join(' '),
+			'Specification-Version': 8.0,
+			'Multi-Release': 'true'
+		)
+	}
+}
+
+build.finalizedBy shadowJar
