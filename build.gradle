@@ -23,10 +23,8 @@ archivesBaseName = "provider"
 
 dependencies {
 
-	shadow group: 'org.jetbrains', name: 'intellij-fernflower', version: '1.2.1.16'
+	compileOnly group: 'org.jetbrains', name: 'intellij-fernflower', version: '1.2.1.16'
 	compileOnly group: 'net.fabricmc', name: 'fabric-loader', version: '0.12.12'
-	shadow group: 'net.oneandone.reflections8', name: 'reflections8', version: '0.11.5'
-	shadow group: 'net.sf.jopt-simple', name: 'jopt-simple', version: '6.0-alpha-3'
 
 	//mixin requirements:
 	compileOnly 'org.spongepowered:mixin:' + mixinVersion
