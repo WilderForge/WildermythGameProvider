@@ -182,8 +182,11 @@ public class WildermythGameProvider implements GameProvider {
 				if(dep.getName().equals("wildermyth.jar")) {
 					System.out.println("Skipping wildermyth.jar");
 				}
-				else if (development && dep.getName().contains("wilderforge-")) {
+				else if (dep.getName().contains("wilderforge-")) {
 					System.out.println("Skipping " + dep.getName() + " because we are in a development environment");
+				}
+				else if(dep.getPath().contains("fabric/") || dep.getName().startsWith("fabric-")) {
+					System.out.println("Skipping fabric dep " + dep.getName());
 				}
 				else if (dep.getName().endsWith(".jar")) {
 					miscGameLibraries.add(dep.toPath());
