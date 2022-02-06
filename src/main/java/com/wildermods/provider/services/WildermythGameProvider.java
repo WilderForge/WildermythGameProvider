@@ -80,7 +80,7 @@ public class WildermythGameProvider implements GameProvider {
 				.setContact(new ContactInformationImpl(wildermythContactInformation))
 				.setDescription("A procedural storytelling RPG where tactical combat and story decisions will alter your world and reshape your cast of characters.");
 		
-		return Collections.singletonList(new BuiltinMod(gameJar, wildermythMetaData.build()));
+		return Collections.singletonList(new BuiltinMod(List.of(gameJar), wildermythMetaData.build()));
 	}
 
 	@Override
