@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -17,6 +18,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.zip.ZipFile;
+
+import org.objectweb.asm.Opcodes;
+import org.spongepowered.asm.launch.MixinBootstrap;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.util.asm.ASM;
 
 import com.wildermods.provider.patch.LegacyPatch;
 
@@ -34,6 +40,8 @@ import net.fabricmc.loader.impl.util.version.StringVersion;
 public class WildermythGameProvider implements GameProvider {
 
 	private static final String[] ENTRYPOINTS = new String[]{"com.worldwalkergames.legacy.LegacyDesktop"};
+	private static final String[] ASM_ = new String[] {"org.objectweb.asm.Opcodes"};
+	private static final String[] MIXIN = new String[] {"org.spongepowered.asm.mixin.Mixin"};
 	private static final HashSet<String> SENSITIVE_ARGS = new HashSet<String>(Arrays.asList(new String[] {}));
 	
 	private Arguments arguments;
@@ -41,6 +49,8 @@ public class WildermythGameProvider implements GameProvider {
 	private Path launchDir;
 	private Path libDir;
 	private Path gameJar;
+	private Path asmJar;
+	private Path mixinJar;
 	private boolean development = false;
 	private final List<Path> miscGameLibraries = new ArrayList<>();
 	
@@ -73,6 +83,18 @@ public class WildermythGameProvider implements GameProvider {
 		wildermythContactInformation.put("homepage", "https://wildermyth.com/");
 		wildermythContactInformation.put("issues", "https://discord.gg/wildermyth");
 		
+		HashMap<String, String> asmContactInformation = new HashMap<>();
+		asmContactInformation.put("homepage", "https://asm.ow2.io/index.html");
+		asmContactInformation.put("issues", "https://gitlab.ow2.org/asm/asm/-/issues");
+		asmContactInformation.put("sources", "https://gitlab.ow2.org/asm/asm");
+		asmContactInformation.put("license", "https://asm.ow2.io/license.html");
+		
+		HashMap<String, String> mixinContactInformation = new HashMap<>();
+		mixinContactInformation.put("homepage", "https://github.com/SpongePowered/Mixin");
+		mixinContactInformation.put("issues", "https://github.com/SpongePowered/Mixin/issues");
+		mixinContactInformation.put("sources", "https://github.com/SpongePowered/Mixin");
+		mixinContactInformation.put("license", "https://github.com/SpongePowered/Mixin/blob/master/LICENSE.txt");
+		
 		BuiltinModMetadata.Builder wildermythMetaData = 
 				new BuiltinModMetadata.Builder(getGameId(), getNormalizedGameVersion())
 				.setName(getGameName())
@@ -80,7 +102,34 @@ public class WildermythGameProvider implements GameProvider {
 				.setContact(new ContactInformationImpl(wildermythContactInformation))
 				.setDescription("A procedural storytelling RPG where tactical combat and story decisions will alter your world and reshape your cast of characters.");
 		
-		return Collections.singletonList(new BuiltinMod(List.of(gameJar), wildermythMetaData.build()));
+		BuiltinModMetadata.Builder asmMetaData = 
+				new BuiltinModMetadata.Builder("asm", ASM.getApiVersionString())
+				.setName("ASM")
+				.addAuthor("INRIA, France Telecom", wildermythContactInformation)
+				.setContact(new ContactInformationImpl(asmContactInformation))
+				.setDescription("ASM is an all purpose Java bytecode manipulation and analysis framework. It can be used to modify existing classes or to dynamically generate classes, directly in binary form.")
+				.addLicense("https://asm.ow2.io/license.html");
+		
+		BuiltinModMetadata.Builder mixinMetaData = 
+				new BuiltinModMetadata.Builder("mixin", MixinBootstrap.VERSION)
+				.setName("Spongepowered Mixin")
+				.addAuthor("Mumfrey", mixinContactInformation)
+				.setContact(new ContactInformationImpl(mixinContactInformation))
+				.setDescription("A bytecode weaving framework for Java using ASM")
+				.addLicense("https://github.com/SpongePowered/Mixin/blob/master/LICENSE.txt");
+		
+		ArrayList<BuiltinMod> builtinMods = new ArrayList<>();
+		builtinMods.add(new BuiltinMod(List.of(gameJar), wildermythMetaData.build()));
+		
+		if(asmJar != null) {
+			builtinMods.add(new BuiltinMod(List.of(asmJar), asmMetaData.build()));
+		}
+		
+		if(mixinJar != null) {
+			builtinMods.add(new BuiltinMod(List.of(mixinJar), mixinMetaData.build()));
+		}
+		
+		return Collections.unmodifiableList(builtinMods);
 	}
 
 	@Override
@@ -145,6 +194,17 @@ public class WildermythGameProvider implements GameProvider {
 			
 			entrypoint = result.name;
 			gameJar = result.path;
+			try {
+				asmJar = GameProviderHelper.findFirst(Collections.singletonList(Paths.get(Opcodes.class.getProtectionDomain().getCodeSource().getLocation().toURI())), zipFiles, true, ASM_).path;
+			} catch (URISyntaxException e) {
+				asmJar = null;
+			}
+			
+			try {
+				mixinJar = GameProviderHelper.findFirst(Collections.singletonList(Paths.get(Mixin.class.getProtectionDomain().getCodeSource().getLocation().toURI())), zipFiles, true, MIXIN).path;
+			} catch (URISyntaxException e) {
+				asmJar = null;
+			}
 			
 		}
 		finally {
