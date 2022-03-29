@@ -2,6 +2,7 @@ package com.wildermods.provider.services;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URISyntaxException;
@@ -35,6 +36,10 @@ import net.fabricmc.loader.impl.metadata.BuiltinModMetadata;
 import net.fabricmc.loader.impl.metadata.ContactInformationImpl;
 import net.fabricmc.loader.impl.util.Arguments;
 import net.fabricmc.loader.impl.util.SystemProperties;
+import net.fabricmc.loader.impl.util.log.Log;
+import net.fabricmc.loader.impl.util.log.LogCategory;
+import net.fabricmc.loader.impl.util.log.LogHandler;
+import net.fabricmc.loader.impl.util.log.LogLevel;
 import net.fabricmc.loader.impl.util.version.StringVersion;
 
 public class WildermythGameProvider implements GameProvider {
@@ -165,6 +170,16 @@ public class WildermythGameProvider implements GameProvider {
 	public boolean locateGame(FabricLauncher launcher, String[] args) {
 		this.arguments = new Arguments();
 		arguments.parse(args);
+		
+		try {
+			Constructor<? extends LogHandler> c = (Constructor<? extends LogHandler>) Class.forName("com.wildermods.wilderforge.launch.logging.Logger").getConstructor(String.class);
+			LogHandler logHandler = c.newInstance("Fabric Loader");
+			Log.init(logHandler, true);
+			logHandler.log(0, LogLevel.ERROR, LogCategory.GENERAL, "ASOFJIOAEWSIOUFHIUO", null, false);
+		} catch (NoSuchMethodException | SecurityException | ClassNotFoundException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e1) {
+			e1.printStackTrace();
+		}
+
 		
 		Map<Path, ZipFile> zipFiles = new HashMap<>();
 		List<Path> lookupPaths = new ArrayList<>();
