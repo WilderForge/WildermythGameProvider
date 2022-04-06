@@ -59,6 +59,8 @@ public class WildermythGameProvider implements GameProvider {
 	private boolean development = false;
 	private final List<Path> miscGameLibraries = new ArrayList<>();
 	
+	private Object crashLogService;
+	
 	private static final GameTransformer TRANSFORMER = new GameTransformer(new LegacyPatch());
 	
 	@Override
@@ -296,6 +298,19 @@ public class WildermythGameProvider implements GameProvider {
 	public void launch(ClassLoader loader) {
 		String targetClass = entrypoint;
 		
+		crashLogService = null;
+		
+		try {
+			Class<?> c = Class.forName("com.wildermods.wilderloader.CrashLogService", true, loader);
+			Method method = c.getDeclaredMethod("obtain", ClassLoader.class);
+			crashLogService = method.invoke(null, loader);
+		}
+		catch(Throwable t) {
+			throw new Error(t);
+		}
+		
+		System.err.println("Crash log service is: " + crashLogService);
+		
 		try {
 			Class<?> c = loader.loadClass(targetClass);
 			Method m = c.getMethod("main", String[].class);
@@ -308,6 +323,18 @@ public class WildermythGameProvider implements GameProvider {
 			throw new FormattedException("Failed to start Wildermyth", e);
 		}
 		
+	}
+	
+	@Override
+	public boolean displayCrash(Throwable t, String context) {
+		try {
+			Method logCrash = crashLogService.getClass().getDeclaredMethod("logCrash", Throwable.class);
+			logCrash.invoke(crashLogService, t);
+			
+		} catch (Throwable t2) {
+			throw new Error(t2);
+		}
+		return false;
 	}
 
 	@Override
