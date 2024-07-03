@@ -3,7 +3,6 @@ package com.wildermods.provider.patch;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -14,11 +13,11 @@ import net.fabricmc.loader.impl.launch.FabricLauncher;
 public class LegacyPatch extends GamePatch {
 
 	@Override
-	public void process(FabricLauncher launcher, Function<String, ClassReader> classSource,
+	public void process(FabricLauncher launcher, Function<String, ClassNode> classSource,
 			Consumer<ClassNode> classEmitter) {
 		String entrypoint = launcher.getEntrypoint();
 		String gameEntryPoint;
-		ClassNode mainClass = readClass(classSource.apply(entrypoint));
+		ClassNode mainClass = classSource.apply(entrypoint);
 		
 		if(mainClass == null) {
 			throw new LinkageError ("Could not load main class " + entrypoint + "!");
@@ -37,7 +36,7 @@ public class LegacyPatch extends GamePatch {
 		
 		ClassNode gameClass;
 		
-		gameClass = readClass(classSource.apply(gameEntryPoint));
+		gameClass = classSource.apply(gameEntryPoint);
 		if(gameClass == null) throw new Error("Could not load game class " + gameEntryPoint + "!");
 		
 		if (gameClass != mainClass) {

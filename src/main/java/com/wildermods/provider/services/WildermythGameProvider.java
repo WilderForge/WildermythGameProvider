@@ -176,8 +176,8 @@ public class WildermythGameProvider implements GameProvider {
 		try {
 			Constructor<? extends LogHandler> c = (Constructor<? extends LogHandler>) Class.forName("com.wildermods.wilderforge.launch.logging.Logger").getConstructor(String.class);
 			LogHandler logHandler = c.newInstance("Fabric Loader");
-			Log.init(logHandler, true);
-			logHandler.log(0, LogLevel.ERROR, LogCategory.GENERAL, "ASOFJIOAEWSIOUFHIUO", null, false);
+			Log.init(logHandler);
+			logHandler.log(0, LogLevel.ERROR, LogCategory.GENERAL, "ASOFJIOAEWSIOUFHIUO", null, false, false);
 		} catch (NoSuchMethodException | SecurityException | ClassNotFoundException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e1) {
 			e1.printStackTrace();
 		}
@@ -277,7 +277,7 @@ public class WildermythGameProvider implements GameProvider {
 
 	@Override
 	public void initialize(FabricLauncher launcher) {
-		TRANSFORMER.locateEntrypoints(launcher, gameJar);
+		TRANSFORMER.locateEntrypoints(launcher, List.of(gameJar));
 	}
 
 	@Override
