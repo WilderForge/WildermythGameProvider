@@ -1,6 +1,7 @@
 plugins {
 	id 'java-library'
 	id 'eclipse'
+	id 'maven-publish'
 }
 
 repositories {
@@ -43,5 +44,24 @@ jar {
 			'Specification-Version': 8.0,
 			'Multi-Release': 'true'
 		)
+	}
+}
+
+task sourcesJar(type: Jar) {
+    archiveClassifier.set("sources")
+    from sourceSets.main.allSource
+}
+
+artifacts {
+	archives jar
+	archives sourcesJar
+}
+
+publishing {
+	publications {
+		mavenJava(MavenPublication) {
+			from components.java
+			artifact sourcesJar
+		}
 	}
 }
