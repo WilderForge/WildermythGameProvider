@@ -23,12 +23,10 @@ archivesBaseName = "provider"
 
 dependencies {
 
-	compileOnly group: 'net.fabricmc', name: 'fabric-loader', version: '0.15.11'
+	compileOnly group: 'net.fabricmc', name: 'fabric-loader', version: fabricVersion
 
 	//mixin requirements:
 	compileOnly 'org.spongepowered:mixin:' + mixinVersion
-	compileOnly 'com.google.guava:guava:33.2.1-jre'
-	compileOnly group: 'com.google.code.gson', name: 'gson', version: '2.11.0'
 	compileOnly group: 'org.ow2.asm', name: 'asm', version: asmVersion
 	compileOnly group: 'org.ow2.asm', name: 'asm-analysis', version: asmVersion
 	compileOnly group: 'org.ow2.asm', name: 'asm-commons', version: asmVersion
