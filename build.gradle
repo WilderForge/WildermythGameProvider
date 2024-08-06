@@ -39,6 +39,7 @@ dependencies {
 jar {
 	manifest {
 		attributes(
+			'Main-Class': 'net.fabricmc.loader.impl.launch.knot.KnotClient',
 			'Class-Path': configurations.runtimeClasspath.collect { it.getName() }.join(' '),
 			'Specification-Version': 8.0,
 			'Multi-Release': 'true'
