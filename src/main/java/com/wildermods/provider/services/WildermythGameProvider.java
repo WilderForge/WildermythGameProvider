@@ -96,6 +96,13 @@ public class WildermythGameProvider implements GameProvider {
 		asmContactInformation.put("sources", "https://gitlab.ow2.org/asm/asm");
 		asmContactInformation.put("license", "https://asm.ow2.io/license.html");
 		
+		HashMap<String, String> fabricMixinContactInformation = new HashMap<>();
+		
+		fabricMixinContactInformation.put("homepage", "https://github.com/FabricMC/Mixin");
+		fabricMixinContactInformation.put("issues", "https://github.com/FabricMC/Mixin/issues");
+		fabricMixinContactInformation.put("sources", "https://github.com/FabricMC/Mixin");
+		fabricMixinContactInformation.put("license", "https://github.com/FabricMC/Mixin/blob/main/LICENSE.txt");
+		
 		HashMap<String, String> mixinContactInformation = new HashMap<>();
 		mixinContactInformation.put("homepage", "https://github.com/SpongePowered/Mixin");
 		mixinContactInformation.put("issues", "https://github.com/SpongePowered/Mixin/issues");
@@ -119,10 +126,15 @@ public class WildermythGameProvider implements GameProvider {
 		
 		BuiltinModMetadata.Builder mixinMetaData = 
 				new BuiltinModMetadata.Builder("mixin", MixinBootstrap.VERSION)
-				.setName("Spongepowered Mixin")
+				.setName("Spongepowered Mixin (Fabric Fork)")
+				.addAuthor("FabricMC", fabricMixinContactInformation)
 				.addAuthor("Mumfrey", mixinContactInformation)
 				.setContact(new ContactInformationImpl(mixinContactInformation))
-				.setDescription("A bytecode weaving framework for Java using ASM")
+				.setDescription("""
+						FabricMC's fork of Mixin, A bytecode weaving framework for Java using ASM.
+						
+						Original by Mumfrey.
+						""")
 				.addLicense("https://github.com/SpongePowered/Mixin/blob/master/LICENSE.txt");
 		
 		ArrayList<BuiltinMod> builtinMods = new ArrayList<>();
