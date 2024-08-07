@@ -302,14 +302,11 @@ public class WildermythGameProvider implements GameProvider {
 			Path logHandler = InternalUtils.getCodeSource(logHandlerClass);
 			
 			launcher.addToClassPath(crashService, ALLOWED_EARLY_CLASS_PREFIXES);
-			launcher.addToClassPath(logHandler, ALLOWED_EARLY_CLASS_PREFIXES);
+			launcher.setAllowedPrefixes(logHandler, ALLOWED_EARLY_CLASS_PREFIXES);
 			
 			System.out.println("Crash service code source: " + crashService);
 			
 			launcher.loadIntoTarget("com.wildermods.provider.services.CrashLogService");
-			launcher.loadIntoTarget("net.fabricmc.loader.impl.util.log.LogHandler");
-			
-			unlockClassPath(launcher);
 			
 			System.out.println("Target CL: " + launcher.getTargetClassLoader());
 			System.out.println("Context CL: " + Thread.currentThread().getContextClassLoader());
