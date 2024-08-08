@@ -87,6 +87,7 @@ public class WildermythGameProvider implements GameProvider {
 		HashMap<String, String> wildermythContactInformation = new HashMap<>();
 		wildermythContactInformation.put("homepage", "https://wildermyth.com/");
 		wildermythContactInformation.put("issues", "https://discord.gg/wildermyth");
+		wildermythContactInformation.put("license", "https://wildermyth.com/terms.php");
 		
 		HashMap<String, String> asmContactInformation = new HashMap<>();
 		asmContactInformation.put("homepage", "https://asm.ow2.io/index.html");
@@ -127,9 +128,10 @@ public class WildermythGameProvider implements GameProvider {
 		BuiltinModMetadata.Builder mixinMetaData = 
 				new BuiltinModMetadata.Builder("mixin", MixinBootstrap.VERSION)
 				.setName("Spongepowered Mixin (Fabric Fork)")
-				.addAuthor("FabricMC", fabricMixinContactInformation)
 				.addAuthor("Mumfrey", mixinContactInformation)
-				.setContact(new ContactInformationImpl(mixinContactInformation))
+				.addAuthor("FabricMC Team", fabricMixinContactInformation)
+				.addAuthor("Spongepowered Team", mixinContactInformation)
+				.setContact(new ContactInformationImpl(fabricMixinContactInformation))
 				.setDescription("""
 						FabricMC's fork of Mixin, A bytecode weaving framework for Java using ASM.
 						
