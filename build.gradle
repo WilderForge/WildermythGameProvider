@@ -12,6 +12,7 @@ repositories {
 	maven {
 		url "https://maven.fabricmc.net/"
 	}
+	mavenLocal()
 }
 
 sourceCompatibility = '17'

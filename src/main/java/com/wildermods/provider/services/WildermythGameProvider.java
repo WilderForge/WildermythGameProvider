@@ -2,6 +2,7 @@ package com.wildermods.provider.services;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URISyntaxException;
@@ -24,7 +25,6 @@ import org.spongepowered.asm.launch.MixinBootstrap;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.util.asm.ASM;
 
-import com.wildermods.provider.internal.InternalUtils;
 import com.wildermods.provider.patch.LegacyPatch;
 
 import net.fabricmc.loader.impl.FormattedException;
@@ -36,11 +36,14 @@ import net.fabricmc.loader.impl.metadata.BuiltinModMetadata;
 import net.fabricmc.loader.impl.metadata.ContactInformationImpl;
 import net.fabricmc.loader.impl.util.Arguments;
 import net.fabricmc.loader.impl.util.SystemProperties;
+import net.fabricmc.loader.impl.util.log.Log;
+import net.fabricmc.loader.impl.util.log.LogCategory;
+import net.fabricmc.loader.impl.util.log.LogHandler;
+import net.fabricmc.loader.impl.util.log.LogLevel;
 import net.fabricmc.loader.impl.util.version.StringVersion;
 
 public class WildermythGameProvider implements GameProvider {
 
-	private static final String[] ALLOWED_EARLY_CLASS_PREFIXES = {"com.wildermods.provider.services.CrashLogService", "net.fabricmc.loader.impl.util.log."};
 	private static final String[] ENTRYPOINTS = new String[]{"com.worldwalkergames.legacy.LegacyDesktop"};
 	private static final String[] ASM_ = new String[] {"org.objectweb.asm.Opcodes"};
 	private static final String[] MIXIN = new String[] {"org.spongepowered.asm.mixin.Mixin"};
@@ -57,7 +60,7 @@ public class WildermythGameProvider implements GameProvider {
 	private boolean development = false;
 	private final List<Path> miscGameLibraries = new ArrayList<>();
 	
-	private Object crashLogService;
+	private CrashLogService crashLogService;
 	
 	private static final GameTransformer TRANSFORMER = new GameTransformer(new LegacyPatch());
 	
@@ -190,8 +193,8 @@ public class WildermythGameProvider implements GameProvider {
 	@SuppressWarnings("unchecked")
 	@Override
 	public boolean locateGame(FabricLauncher launcher, String[] args) {
-		System.out.println("BEGIN INITIALIZATION");
 		System.setProperty("fabric.debug.disableClassPathIsolation", "");
+		
 		this.arguments = new Arguments();
 		arguments.parse(args);
 		Map<Path, ZipFile> zipFiles = new HashMap<>();
@@ -254,6 +257,20 @@ public class WildermythGameProvider implements GameProvider {
 		return true;
 		
 	}
+	
+	private void initializeLogging(ClassLoader loader) {
+		ClassLoader prevCL = Thread.currentThread().getContextClassLoader();
+		try {
+			Constructor<? extends LogHandler> loggerClass = (Constructor<? extends LogHandler>) loader.loadClass("com.wildermods.wilderforge.launch.logging.Logger").getConstructor(String.class);
+			LogHandler logHandler = loggerClass.newInstance("Fabric Loader");
+			Log.init(logHandler);
+			logHandler.log(0, LogLevel.ERROR, LogCategory.GENERAL, "Logging Initialized", null, false, false);
+			
+		} catch (Throwable t) {
+			t.printStackTrace();
+		}
+		Thread.currentThread().setContextClassLoader(prevCL);
+	}
 
 	private void locateFilesystemDependencies() {
 		File lib = libDir.toFile();
@@ -295,34 +312,6 @@ public class WildermythGameProvider implements GameProvider {
 
 	@Override
 	public void initialize(FabricLauncher launcher) {
-		
-		try {
-			Class<?> crashServiceClass = Thread.currentThread().getContextClassLoader().loadClass("com.wildermods.provider.services.CrashLogService");
-			Path crashService = InternalUtils.getCodeSource(crashServiceClass);
-			
-			Class<?> logHandlerClass = Thread.currentThread().getContextClassLoader().loadClass("net.fabricmc.loader.impl.util.log.LogHandler");
-			Path logHandler = InternalUtils.getCodeSource(logHandlerClass);
-			
-			launcher.addToClassPath(crashService, ALLOWED_EARLY_CLASS_PREFIXES);
-			launcher.setAllowedPrefixes(logHandler, ALLOWED_EARLY_CLASS_PREFIXES);
-			
-			System.out.println("Crash service code source: " + crashService);
-			
-			launcher.loadIntoTarget("com.wildermods.provider.services.CrashLogService");
-			
-			System.out.println("Target CL: " + launcher.getTargetClassLoader());
-			System.out.println("Context CL: " + Thread.currentThread().getContextClassLoader());
-			System.out.println("Provider CL:" + getClass().getClassLoader());
-			System.out.println("Provider Parent CL:" + getClass().getClassLoader().getParent());
-			
-		} catch (SecurityException | ClassNotFoundException | IllegalArgumentException e1) {
-			System.out.println("Target: " + launcher.getTargetClassLoader());
-			System.out.println("Context: " + Thread.currentThread().getContextClassLoader());
-			System.out.println("Provider CL:" + getClass().getClassLoader());
-			System.out.println("Provider Parent CL:" + getClass().getClassLoader().getParent());
-			e1.printStackTrace();
-		}
-		
 		TRANSFORMER.locateEntrypoints(launcher, List.of(gameJar));
 	}
 
@@ -342,15 +331,13 @@ public class WildermythGameProvider implements GameProvider {
 
 	@Override
 	public void launch(ClassLoader loader) {
+		initializeLogging(loader);
 		String targetClass = entrypoint;
 		
 		crashLogService = null;
 
 		try {
-			System.out.println(getClass().getClassLoader());
-			Class<?> c = Class.forName("com.wildermods.provider.services.CrashLogService", true, loader);
-			Method method = c.getDeclaredMethod("obtain", ClassLoader.class);
-			crashLogService = method.invoke(null, loader);
+			crashLogService = CrashLogService.obtain();
 		}
 		catch(Throwable t) {
 			throw new Error(t);
