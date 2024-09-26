@@ -8,7 +8,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -28,7 +27,6 @@ import org.spongepowered.asm.launch.MixinBootstrap;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.util.asm.ASM;
 
-import com.wildermods.provider.classloader.DependencyFirstClassLoader;
 import com.wildermods.provider.patch.LegacyPatch;
 import com.wildermods.provider.services.CrashLogService;
 
@@ -59,8 +57,8 @@ public class WildermythGameProvider implements GameProvider {
 	private String entrypoint;
 	private Path launchDir;
 	private Path libDir;
-	private Path modDeps;
-	private Path transDeps;
+	private Path modDepsDir;
+	private Path transDepsDir;
 	private Path gameJar;
 	private Path asmJar;
 	private Path mixinJar;
@@ -321,7 +319,7 @@ public class WildermythGameProvider implements GameProvider {
 			}
 		}
 		
-		for(File dep : modDeps.toFile().listFiles()) {
+		for(File dep : modDepsDir.toFile().listFiles()) {
 			if(dep.getName().endsWith(".jar")) {
 				System.out.println("Adding mod dependency " + dep.toPath());
 				modDependencies.add(dep.toPath());
@@ -343,24 +341,28 @@ public class WildermythGameProvider implements GameProvider {
 	@Override
 	public void unlockClassPath(FabricLauncher launcher) {
 		launcher.addToClassPath(gameJar);
-		launcher.addToClassPath(modDeps);
-		launcher.addToClassPath(asmJar, ASM_);
 		
 		for(Path lib : miscGameLibraries) {
 			launcher.addToClassPath(lib);
+		}
+		
+		for(Path dep : modDependencies) {
+			try {
+				System.out.println("REAL PATH: " + modDepsDir.toRealPath());
+			} catch (IOException e) {
+				throw new Error(e);
+			}
+			//launcher.addToClassPath(dep);
+			
+		}
+		
+		for(Path dep : transDependencies) {
+			//launcher.addToClassPath(dep);
 		}
 	}
 
 	@Override
 	public void launch(ClassLoader loader) {
-		
-		try {
-			loader = new DependencyFirstClassLoader(new URL[] {modDeps.toAbsolutePath().toUri().toURL()}, loader);
-		} catch (Throwable t) {
-			var err = new LinkageError();
-			err.initCause(t);
-			throw err;
-		}
 		
 		initializeLogging(loader);
 		String targetClass = entrypoint;
@@ -443,7 +445,7 @@ public class WildermythGameProvider implements GameProvider {
 		System.out.println("Launch directory is " + launchDir);
 		
 		if(!arguments.containsKey("libDir")) {
-			libDir = launchDir.resolve("/lib");
+			libDir = launchDir.resolve("lib");
 		}
 		else {
 			libDir = Path.of(arguments.get("libDir"));
@@ -452,22 +454,22 @@ public class WildermythGameProvider implements GameProvider {
 		System.out.println("Lib directory is " + libDir);
 		
 		if(!arguments.containsKey("modDeps")) {
-			modDeps = launchDir.resolve("modDeps");
+			modDepsDir = launchDir.resolve("modDeps");
 		}
 		else {
-			modDeps = Path.of(arguments.get("modDeps"));
+			modDepsDir = Path.of(arguments.get("modDeps"));
 		}
 		
-		System.out.println("Mod dep directory is");
+		System.out.println("Mod dep directory is " + modDepsDir);
 		
 		if(!arguments.containsKey("transDeps")) {
-			transDeps = launchDir.resolve("transDeps");
+			transDepsDir = launchDir.resolve("transDeps");
 		}
 		else {
-			transDeps = Path.of(arguments.get("transDeps"));
+			transDepsDir = Path.of(arguments.get("transDeps"));
 		}
 		
-		System.out.println("Transitive dep directory is " + transDeps);
+		System.out.println("Transitive dep directory is " + transDepsDir);
 		
 		if(!Files.exists(libDir)) {
 			try {
@@ -478,26 +480,24 @@ public class WildermythGameProvider implements GameProvider {
 			}
 		}
 		
-		if(!Files.exists(modDeps)) {
+		if(!Files.exists(modDepsDir)) {
 			try {
-				Files.createDirectories(modDeps);
-				System.out.println("Created " + modDeps);
+				Files.createDirectories(modDepsDir);
+				System.out.println("Created " + modDepsDir);
 			} catch (IOException e) {
 				throw new IOError(e);
 			}
 		}
 		
-		if(!Files.exists(transDeps)) {
+		if(!Files.exists(transDepsDir)) {
 			try {
-				Files.createDirectories(transDeps);
-				System.out.println("Created " + transDeps);
+				Files.createDirectories(transDepsDir);
+				System.out.println("Created " + transDepsDir);
 			} catch (IOException e) {
 				throw new IOError(e);
 			}
 		}
 		
-		modDeps = launchDir.resolve(Path.of("./modDeps"));
-		System.out.println("Coremod dependency directory is " + modDeps);
 	}
 	
 	private static Path getLaunchDirectory(Arguments arguments) {
