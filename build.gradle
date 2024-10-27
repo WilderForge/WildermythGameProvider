@@ -15,6 +15,10 @@ repositories {
 	mavenLocal()
 }
 
+java {
+    modularity.inferModulePath.set(true)
+}
+
 sourceCompatibility = '17'
 targetCompatibility = '17'
 
@@ -25,6 +29,9 @@ archivesBaseName = "provider"
 configurations {
 	compileOnlyResolvable {
 		extendsFrom compileOnly
+	}
+	implementationResolvable {
+		extendsFrom implementation
 	}
 }
 
@@ -40,6 +47,8 @@ dependencies {
 	compileOnly group: 'org.ow2.asm', name: 'asm-commons', version: asmVersion
 	compileOnly group: 'org.ow2.asm', name: 'asm-tree', version: asmVersion
 	compileOnly group: 'org.ow2.asm', name: 'asm-util', version: asmVersion
+	
+	implementation group: 'org.apache.commons', name: 'commons-lang3', version: commonsLangVersion
 
 }
 
@@ -96,7 +105,7 @@ tasks.compileJava {
 	dependsOn jarFakeModLauncher, jarFakeModLoader, jarFakeLog4j
 	doFirst {
 		def fakeModulesJarPath = "$buildDir/fake/modlauncher.jar:$buildDir/fake/modloader.jar:$buildDir/fake/log4j.jar"
-		def modulePath = "$fakeModulesJarPath:${configurations.compileOnlyResolvable.asPath}"
+		def modulePath = "$fakeModulesJarPath:${configurations.compileOnlyResolvable.asPath}:${configurations.implementationResolvable.asPath}"
 		options.compilerArgs += ['--module-path', modulePath]
 	}
 }
