@@ -2,6 +2,7 @@ plugins {
 	id 'java-library'
 	id 'eclipse'
 	id 'maven-publish'
+	id ('com.gradleup.shadow') version "8.3.3"
 }
 
 repositories {
@@ -22,15 +23,6 @@ version = providerVersion
 group = "com.wildermods"
 archivesBaseName = "provider"
 
-configurations {
-	compileOnlyResolvable {
-		extendsFrom compileOnly
-	}
-	implementationResolvable {
-		extendsFrom implementation
-	}
-}
-
 dependencies {
 
 	compileOnly group: 'net.fabricmc', name: 'fabric-loader', version: fabricVersion
@@ -45,7 +37,6 @@ dependencies {
 	compileOnly group: 'org.ow2.asm', name: 'asm-util', version: asmVersion
 	
 	implementation group: 'org.apache.commons', name: 'commons-lang3', version: commonsLangVersion
-
 }
 
 jar {
