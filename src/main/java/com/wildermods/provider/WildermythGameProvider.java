@@ -247,7 +247,7 @@ public class WildermythGameProvider implements GameProvider {
 			if(gameJarProperty != null) {
 				Path path = Paths.get(gameJarProperty);
 				if (!Files.exists(path)) {
-					throw new RuntimeException("Game jar configured through " + SystemProperties.GAME_JAR_PATH + " system property doesn't exist");
+					throw new RuntimeException("Game jar configured through " + SystemProperties.GAME_JAR_PATH + " system property doesn't exist (" + path.normalize().toAbsolutePath() + ")");
 				}
 				lookupPaths.add(path);
 				result = GameProviderHelper.findFirst(Collections.singletonList(path), zipFiles, true, ENTRYPOINTS);
