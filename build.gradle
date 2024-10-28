@@ -15,10 +15,6 @@ repositories {
 	mavenLocal()
 }
 
-java {
-    modularity.inferModulePath.set(true)
-}
-
 sourceCompatibility = '17'
 targetCompatibility = '17'
 
@@ -52,71 +48,11 @@ dependencies {
 
 }
 
-tasks.compileJava {
-	options.compilerArgs += [
-		'--module-path', configurations.compileClasspath.asPath, // Set module path to modular dependencies
-	]
-	classpath = files() // Clear the default classpath to avoid mixing with module path
-}
-
-task compileFakeModLauncher(type: JavaCompile) {
-	source = fileTree('src/fake/modlauncher/')
-	destinationDir = file("$buildDir/classes/fake/modlauncher")
-	classpath = files() // No classpath needed since this is a fake module
-	options.compilerArgs = ['--module-path', configurations.compileOnlyResolvable.asPath]
-}
-
-task compileFakeModLoader(type: JavaCompile) {
-	source = fileTree('src/fake/modloader/')
-	destinationDir = file("$buildDir/classes/fake/modloader")
-	classpath = files() // No classpath needed since this is a fake module
-	options.compilerArgs = ['--module-path', configurations.compileOnlyResolvable.asPath]
-}
-
-task compileFakeLog4j(type: JavaCompile) {
-	source = fileTree('src/fake/log4j/')
-	destinationDir = file("$buildDir/classes/fake/log4j")
-	classpath = files() // No classpath needed for fake module
-	options.compilerArgs = ['--module-path', configurations.compileOnlyResolvable.asPath]
-}
-
-task jarFakeModLauncher(type: Jar) {
-	dependsOn compileFakeModLauncher
-	archiveFileName.set('modlauncher.jar')
-	destinationDirectory.set(file("$buildDir/fake"))
-	from("$buildDir/classes/fake/modlauncher")
-}
-
-task jarFakeModLoader(type: Jar) {
-	dependsOn compileFakeModLoader
-	archiveFileName.set('modloader.jar')
-	destinationDirectory.set(file("$buildDir/fake"))
-	from("$buildDir/classes/fake/modloader")
-}
-
-task jarFakeLog4j(type: Jar) {
-	dependsOn compileFakeLog4j
-	archiveFileName.set('log4j.jar')
-	destinationDirectory.set(file("$buildDir/fake"))
-	from("$buildDir/classes/fake/log4j")
-}
-
-tasks.compileJava {
-	dependsOn jarFakeModLauncher, jarFakeModLoader, jarFakeLog4j
-	doFirst {
-		def fakeModulesJarPath = "$buildDir/fake/modlauncher.jar:$buildDir/fake/modloader.jar:$buildDir/fake/log4j.jar"
-		def modulePath = "$fakeModulesJarPath:${configurations.compileOnlyResolvable.asPath}:${configurations.implementationResolvable.asPath}"
-		options.compilerArgs += ['--module-path', modulePath]
-	}
-}
-
-
 jar {
 	manifest {
 		attributes(
 			'Main-Class': 'net.fabricmc.loader.impl.launch.knot.KnotClient',
 			'Class-Path': configurations.runtimeClasspath.collect { it.getName() }.join(' '),
-			'Specification-Version': 8.0,
 			'Multi-Release': 'true'
 		)
 	}
@@ -125,9 +61,6 @@ jar {
 task sourcesJar(type: Jar) {
 	archiveClassifier.set("sources")
 	from sourceSets.main.allSource
-	from(fileTree('src/fake')) { // Include the fake module files into the 'fake' subdirectory
-		into 'fake'
-	}
 }
 
 artifacts {

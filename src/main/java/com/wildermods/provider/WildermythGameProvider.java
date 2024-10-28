@@ -63,15 +63,11 @@ public class WildermythGameProvider implements GameProvider {
 	private String entrypoint;
 	private Path launchDir;
 	private Path libDir;
-	private Path modDepsDir;
-	private Path transDepsDir;
 	private Path gameJar;
 	private Path asmJar;
 	private Path mixinJar;
 	private boolean development = false;
 	private final List<Path> miscGameLibraries = new ArrayList<>();
-	private final List<Path> modDependencies = new ArrayList<>();
-	private final List<Path> transDependencies = new ArrayList<>();
 	
 	private CrashLogService crashLogService;
 	
@@ -334,13 +330,6 @@ public class WildermythGameProvider implements GameProvider {
 				System.out.println("Skipping non-jar file " + dep);
 			}
 		}
-		
-		for(File dep : modDepsDir.toFile().listFiles()) {
-			if(dep.getName().endsWith(".jar")) {
-				System.out.println("Adding mod dependency " + dep.toPath());
-				modDependencies.add(dep.toPath());
-			}
-		}
 
 	}
 
@@ -362,19 +351,6 @@ public class WildermythGameProvider implements GameProvider {
 			launcher.addToClassPath(lib);
 		}
 		
-		for(Path dep : modDependencies) {
-			try {
-				System.out.println("REAL PATH: " + modDepsDir.toRealPath());
-			} catch (IOException e) {
-				throw new Error(e);
-			}
-			//launcher.addToClassPath(dep);
-			
-		}
-		
-		for(Path dep : transDependencies) {
-			//launcher.addToClassPath(dep);
-		}
 	}
 
 	@Override
@@ -469,24 +445,6 @@ public class WildermythGameProvider implements GameProvider {
 
 		System.out.println("Lib directory is " + libDir);
 		
-		if(!arguments.containsKey("modDeps")) {
-			modDepsDir = launchDir.resolve("modDeps");
-		}
-		else {
-			modDepsDir = Path.of(arguments.get("modDeps"));
-		}
-		
-		System.out.println("Mod dep directory is " + modDepsDir);
-		
-		if(!arguments.containsKey("transDeps")) {
-			transDepsDir = launchDir.resolve("transDeps");
-		}
-		else {
-			transDepsDir = Path.of(arguments.get("transDeps"));
-		}
-		
-		System.out.println("Transitive dep directory is " + transDepsDir);
-		
 		if(!Files.exists(libDir)) {
 			try {
 				Files.createDirectories(libDir);
@@ -495,26 +453,6 @@ public class WildermythGameProvider implements GameProvider {
 				throw new IOError(e);
 			}
 		}
-		
-		if(!Files.exists(modDepsDir)) {
-			try {
-				Files.createDirectories(modDepsDir);
-				System.out.println("Created " + modDepsDir);
-			} catch (IOException e) {
-				throw new IOError(e);
-			}
-		}
-		
-		if(!Files.exists(transDepsDir)) {
-			try {
-				Files.createDirectories(transDepsDir);
-				System.out.println("Created " + transDepsDir);
-			} catch (IOException e) {
-				throw new IOError(e);
-			}
-		}
-		
-		
 		
 	}
 	

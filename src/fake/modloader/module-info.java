@@ -1,1 +1,0 @@
-module cpw.mods.modloader {}

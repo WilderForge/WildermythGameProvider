@@ -1,1 +1,0 @@
-module org.apache.logging.log4j {}
