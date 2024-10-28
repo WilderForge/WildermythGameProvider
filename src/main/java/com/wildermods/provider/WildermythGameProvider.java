@@ -31,6 +31,8 @@ import org.spongepowered.asm.launch.MixinBootstrap;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.util.asm.ASM;
 
+import com.google.gson.JsonIOException;
+import com.google.gson.JsonSyntaxException;
 import com.wildermods.provider.patch.LegacyPatch;
 import com.wildermods.provider.services.CrashLogService;
 import com.wildermods.provider.steam.Steam;
@@ -56,8 +58,19 @@ public class WildermythGameProvider implements GameProvider {
 	private static final String[] ENTRYPOINTS = new String[]{"com.worldwalkergames.legacy.LegacyDesktop"};
 	private static final String[] ASM_ = new String[] {"org.objectweb.asm.Opcodes"};
 	private static final String[] MIXIN = new String[] {"org.spongepowered.asm.mixin.Mixin"};
-	private static final String[] LOADER = new String[] {"net.fabricmc.loader.impl.launch.FabricLauncher"};
 	private static final HashSet<String> SENSITIVE_ARGS = new HashSet<String>(Arrays.asList(new String[] {}));
+	private static final Path PROVIDER_SETTINGS_FILE = Path.of(".").normalize().resolve("providerSettings.json");
+	private static final ProviderSettings SETTINGS;
+	static {
+		ProviderSettings settings;
+		try {
+			settings = ProviderSettings.fromJson(PROVIDER_SETTINGS_FILE);
+		} catch (JsonIOException | JsonSyntaxException | IOException e) {
+			e.printStackTrace();
+			settings = new ProviderSettings();
+		}
+		SETTINGS = settings;
+	}
 	
 	private Arguments arguments;
 	private String entrypoint;
@@ -203,7 +216,7 @@ public class WildermythGameProvider implements GameProvider {
 	public boolean locateGame(FabricLauncher launcher, String[] args) {
 		System.setProperty("fabric.debug.disableClassPathIsolation", "");
 		try {
-			if("true".equals(System.getProperty("steam.workshop.coremods"))) {
+			if("true".equals(System.getProperty("steam.workshop.coremods")) || SETTINGS.enableWorkshopCoremods()) {
 				gatherWorkshopCoremods();
 			}
 			else {

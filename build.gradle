@@ -37,6 +37,7 @@ dependencies {
 	compileOnly group: 'org.ow2.asm', name: 'asm-util', version: asmVersion
 	
 	implementation group: 'org.apache.commons', name: 'commons-lang3', version: commonsLangVersion
+	implementation group: 'com.google.code.gson', name: 'gson', version: '2.11.0'
 }
 
 jar {
