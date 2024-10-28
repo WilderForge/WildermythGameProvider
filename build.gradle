@@ -54,6 +54,13 @@ task sourcesJar(type: Jar) {
 	from sourceSets.main.allSource
 }
 
+tasks.named('shadowJar', com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar) {
+    exclude '**/license.txt'
+    exclude '**/license'
+    exclude '**/notice.txt'
+    exclude '**/notice' 
+}
+
 artifacts {
 	archives jar
 	archives sourcesJar
