@@ -216,7 +216,7 @@ public class WildermythGameProvider implements GameProvider {
 	public boolean locateGame(FabricLauncher launcher, String[] args) {
 		System.setProperty("fabric.debug.disableClassPathIsolation", "");
 		try {
-			if("true".equals(System.getProperty("steam.workshop.coremods")) || SETTINGS.enableWorkshopCoremods()) {
+			if("true".equals(System.getProperty("steam.workshop.coremods")) || SETTINGS.workshopCoremodsEnabled()) {
 				gatherWorkshopCoremods();
 			}
 			else {
