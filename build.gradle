@@ -2,6 +2,7 @@ plugins {
 	id 'java-library'
 	id 'eclipse'
 	id 'maven-publish'
+	id ('com.gradleup.shadow') version "8.3.3"
 }
 
 repositories {
@@ -34,7 +35,9 @@ dependencies {
 	compileOnly group: 'org.ow2.asm', name: 'asm-commons', version: asmVersion
 	compileOnly group: 'org.ow2.asm', name: 'asm-tree', version: asmVersion
 	compileOnly group: 'org.ow2.asm', name: 'asm-util', version: asmVersion
-
+	
+	implementation group: 'org.apache.commons', name: 'commons-lang3', version: commonsLangVersion
+	implementation group: 'com.google.code.gson', name: 'gson', version: '2.11.0'
 }
 
 jar {
@@ -42,15 +45,26 @@ jar {
 		attributes(
 			'Main-Class': 'net.fabricmc.loader.impl.launch.knot.KnotClient',
 			'Class-Path': configurations.runtimeClasspath.collect { it.getName() }.join(' '),
-			'Specification-Version': 8.0,
 			'Multi-Release': 'true'
 		)
 	}
 }
 
 task sourcesJar(type: Jar) {
-    archiveClassifier.set("sources")
-    from sourceSets.main.allSource
+	archiveClassifier.set("sources")
+	from sourceSets.main.allSource
+}
+
+tasks.build {
+	dependsOn sourcesJar
+}
+
+tasks.named('shadowJar', com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar) {
+    exclude '**/license.txt'
+    exclude '**/license'
+    exclude '**/notice.txt'
+    exclude '**/notice' 
+    finalizedBy sourcesJar
 }
 
 artifacts {

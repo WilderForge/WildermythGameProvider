@@ -1,14 +1,19 @@
-package com.wildermods.provider.services;
+package com.wildermods.provider;
 
 import java.io.File;
+import java.io.IOError;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+
 import java.net.URISyntaxException;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -18,6 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.StringJoiner;
 import java.util.zip.ZipFile;
 
 import org.objectweb.asm.Opcodes;
@@ -25,7 +31,11 @@ import org.spongepowered.asm.launch.MixinBootstrap;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.util.asm.ASM;
 
+import com.google.gson.JsonIOException;
+import com.google.gson.JsonSyntaxException;
 import com.wildermods.provider.patch.LegacyPatch;
+import com.wildermods.provider.services.CrashLogService;
+import com.wildermods.provider.steam.Steam;
 
 import net.fabricmc.loader.impl.FormattedException;
 import net.fabricmc.loader.impl.game.GameProvider;
@@ -41,14 +51,26 @@ import net.fabricmc.loader.impl.util.log.LogCategory;
 import net.fabricmc.loader.impl.util.log.LogHandler;
 import net.fabricmc.loader.impl.util.log.LogLevel;
 import net.fabricmc.loader.impl.util.version.StringVersion;
+import static net.fabricmc.loader.impl.util.SystemProperties.ADD_MODS;;
 
 public class WildermythGameProvider implements GameProvider {
 
 	private static final String[] ENTRYPOINTS = new String[]{"com.worldwalkergames.legacy.LegacyDesktop"};
 	private static final String[] ASM_ = new String[] {"org.objectweb.asm.Opcodes"};
 	private static final String[] MIXIN = new String[] {"org.spongepowered.asm.mixin.Mixin"};
-	private static final String[] LOADER = new String[] {"net.fabricmc.loader.impl.launch.FabricLauncher"};
 	private static final HashSet<String> SENSITIVE_ARGS = new HashSet<String>(Arrays.asList(new String[] {}));
+	private static final Path PROVIDER_SETTINGS_FILE = Path.of(".").normalize().resolve("providerSettings.json");
+	private static final ProviderSettings SETTINGS;
+	static {
+		ProviderSettings settings;
+		try {
+			settings = ProviderSettings.fromJson(PROVIDER_SETTINGS_FILE);
+		} catch (JsonIOException | JsonSyntaxException | IOException e) {
+			e.printStackTrace();
+			settings = new ProviderSettings();
+		}
+		SETTINGS = settings;
+	}
 	
 	private Arguments arguments;
 	private String entrypoint;
@@ -190,10 +212,22 @@ public class WildermythGameProvider implements GameProvider {
 		return true;
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public boolean locateGame(FabricLauncher launcher, String[] args) {
 		System.setProperty("fabric.debug.disableClassPathIsolation", "");
+		try {
+			if("true".equals(System.getProperty("steam.workshop.coremods")) || SETTINGS.enableWorkshopCoremods()) {
+				gatherWorkshopCoremods();
+			}
+			else {
+				System.out.println("WORKSHOP COREMODS DISABLED");
+			}
+		} catch (IOException e) {
+			throw new Error(e);
+		}
+		
+
+		
 		
 		this.arguments = new Arguments();
 		arguments.parse(args);
@@ -251,6 +285,8 @@ public class WildermythGameProvider implements GameProvider {
 		}
 		
 		processArgumentMap(arguments);
+		
+		
 		
 		locateFilesystemDependencies();
 		
@@ -327,10 +363,12 @@ public class WildermythGameProvider implements GameProvider {
 		for(Path lib : miscGameLibraries) {
 			launcher.addToClassPath(lib);
 		}
+		
 	}
 
 	@Override
 	public void launch(ClassLoader loader) {
+		
 		initializeLogging(loader);
 		String targetClass = entrypoint;
 		
@@ -344,6 +382,7 @@ public class WildermythGameProvider implements GameProvider {
 		}
 		
 		System.err.println("Crash log service is: " + crashLogService);
+		
 		
 		try {
 			Class<?> c = loader.loadClass(targetClass);
@@ -409,11 +448,59 @@ public class WildermythGameProvider implements GameProvider {
 		
 		launchDir = Path.of(arguments.get("gameDir"));
 		System.out.println("Launch directory is " + launchDir);
-		libDir = launchDir.resolve(Path.of("./lib"));
+		
+		if(!arguments.containsKey("libDir")) {
+			libDir = launchDir.resolve("lib");
+		}
+		else {
+			libDir = Path.of(arguments.get("libDir"));
+		}
+
+		System.out.println("Lib directory is " + libDir);
+		
+		if(!Files.exists(libDir)) {
+			try {
+				Files.createDirectories(libDir);
+				System.out.println("Created " + libDir);
+			} catch (IOException e) {
+				throw new IOError(e);
+			}
+		}
+		
 	}
 	
 	private static Path getLaunchDirectory(Arguments arguments) {
 		return Paths.get(arguments.getOrDefault("gameDir", "."));
+	}
+	
+	private static final void gatherWorkshopCoremods() throws IOException {
+		StringJoiner addedMods = new StringJoiner(File.pathSeparator);
+		
+		if(System.getProperty(ADD_MODS) != null) {
+			addedMods.add(System.getProperty(ADD_MODS));
+		}
+		
+		if(Files.exists(Steam.Workshop.getModDir())) {
+		
+			Files.walkFileTree(Steam.Workshop.getModDir(), new SimpleFileVisitor<Path>() {
+				@Override
+				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+					if (file.toString().endsWith(".jar")) {
+						System.out.println("Adding workshop coremod at " + file);
+						addedMods.add(file.normalize().toAbsolutePath().toString());  // Add the first JAR found
+						return FileVisitResult.SKIP_SIBLINGS;  // Skip other files in the same mod folder
+					}
+					return FileVisitResult.CONTINUE;
+				}
+			});
+			
+		}
+		else {
+			System.out.println("Could not locate worshop mod directory at " + Steam.Workshop.getModDir());
+		}
+		
+		System.setProperty(ADD_MODS, addedMods.toString());
+
 	}
 	
 	private StringVersion getGameVersion() {
