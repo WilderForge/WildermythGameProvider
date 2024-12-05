@@ -1,0 +1,18 @@
+[versions]
+fabric_loader_version = "0.16.8"
+mixin_version = "0.15.4+mixin.0.8.7"
+asm_version = "9.7"
+commons_lang_version = "3.14.0"
+
+[libraries]
+fabric-loader = { module = "net.fabricmc:fabric-loader", version.ref = "fabric_loader_version" }
+mixin = { module = "net.fabricmc:sponge-mixin", version.ref = "mixin_version" }
+asm = { module = "org.ow2.asm:asm", version.ref = "asm_version" }
+asm-analysis = { module = "org.ow2.asm:asm-analysis", version.ref = "asm_version" }
+asm-commons = { module = "org.ow2.asm:asm-commons", version.ref = "asm_version" }
+asm-tree = { module = "org.ow2.asm:asm-tree", version.ref = "asm_version" }
+asm-util = { module = "org.ow2.asm:asm-util", version.ref = "asm_version" }
+commons_lang = { module = "org.apache.commons:commons-lang3", version.ref = "commons_lang_version" }
+
+[bundles]
+fabric = ["fabric-loader", "mixin", "asm", "asm-analysis", "asm-commons", "asm-tree", "asm-util"]

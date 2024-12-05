@@ -1,1 +1,8 @@
+dependencyResolutionManagement {
+    versionCatalogs {
+        libs {
+            files("gradle/libs.versions.toml")
+        }
+    }
+}
 rootProject.name = "provider"

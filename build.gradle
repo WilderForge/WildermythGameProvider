@@ -25,18 +25,18 @@ archivesBaseName = "provider"
 
 dependencies {
 
-	compileOnly group: 'net.fabricmc', name: 'fabric-loader', version: fabricVersion
+	compileOnly libs.fabric.loader
 
 	//mixin requirements:
-	compileOnly group: 'net.fabricmc', name: 'sponge-mixin', version: mixinVersion
+	compileOnly libs.mixin
 	
-	compileOnly group: 'org.ow2.asm', name: 'asm', version: asmVersion
-	compileOnly group: 'org.ow2.asm', name: 'asm-analysis', version: asmVersion
-	compileOnly group: 'org.ow2.asm', name: 'asm-commons', version: asmVersion
-	compileOnly group: 'org.ow2.asm', name: 'asm-tree', version: asmVersion
-	compileOnly group: 'org.ow2.asm', name: 'asm-util', version: asmVersion
+	compileOnly libs.asm
+	compileOnly libs.asm.analysis
+	compileOnly libs.asm.commons
+	compileOnly libs.asm.tree
+	compileOnly libs.asm.util
 	
-	implementation(group: 'org.apache.commons', name: 'commons-lang3', version: commonsLangVersion) {
+	implementation(libs.commons.lang) {
 		transitive = false
 	}
 }
