@@ -51,33 +51,70 @@ jar {
 	}
 }
 
-task sourcesJar(type: Jar) {
-	archiveClassifier.set("sources")
-	from sourceSets.main.allSource
-}
-
-tasks.build {
-	dependsOn sourcesJar
-}
-
 tasks.named('shadowJar', com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar) {
 	exclude '**/license.txt'
 	exclude '**/license'
 	exclude '**/notice.txt'
 	exclude '**/notice' 
-	finalizedBy sourcesJar
+	exclude '**/LICENSE.txt'
+	exclude '**/LICENSE'
+	exclude '**/NOTICE.txt'
+	exclude '**/NOTICE' 
+	finalizedBy sourceJar
 }
 
-artifacts {
-	archives jar
-	archives sourcesJar
+ext.mavenLocalUrl = repositories.mavenLocal().url.toString()
+
+task sourceJar(type: Jar) {
+    from sourceSets.main.allSource
+    archiveClassifier.set('sources')
+}
+
+tasks.register('checkArtifactExists') {
+    doLast {
+        def repoUrl = project.hasProperty('mavenRepoUrl') ? project.mavenRepoUrl : mavenLocalUrl
+        def artifactPath = "${repoUrl}/${project.group.replace('.', '/')}/${project.archivesBaseName}/${project.version}/${project.archivesBaseName}-${project.version}.jar"
+        logger.lifecycle("Checking if artifact exists at: $artifactPath")
+        
+        if (artifactPath.startsWith('file:/')) {
+            // Handle file URLs
+            def file = new File(new URI(artifactPath))
+            if (file.exists()) {
+                throw new IllegalStateException("Artifact '${project.group}:${project.archivesBaseName}:${project.version}' already exists. Publishing aborted.")
+            }
+        } else {
+            // Handle HTTP URLs
+            def url = new URL(artifactPath)
+            def connection = url.openConnection()
+            connection.setRequestMethod('HEAD')
+            if (connection.responseCode == 200) {
+				throw new IllegalStateException("Artifact '${project.group}:${project.archivesBaseName}:${project.version}' already exists. Publishing aborted.")
+            }
+        }
+        logger.lifecycle("Artifact does not exist, proceeding with publish.")
+    }
+}
+
+tasks.named('publish') {
+    dependsOn 'checkArtifactExists'
 }
 
 publishing {
-	publications {
-		mavenJava(MavenPublication) {
-			from components.java
-			artifact sourcesJar
-		}
-	}
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            groupId = project.group
+            artifactId = project.archivesBaseName
+            version = project.version
+
+            // Attach sources JAR to the publication
+            artifact sourceJar
+        }
+    }
+
+    repositories {
+        maven {
+            url = uri(project.hasProperty('mavenRepoUrl') ? project.mavenRepoUrl : mavenLocalUrl) // Default to mavenLocal if no custom URL is provided
+        }
+    }
 }
