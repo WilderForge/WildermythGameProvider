@@ -1,8 +1,8 @@
 [versions]
-fabric_loader_version = "0.16.8"
-mixin_version = "0.15.4+mixin.0.8.7"
-asm_version = "9.7"
-commons_lang_version = "3.14.0"
+fabric_loader_version = "0.16.9"
+mixin_version = "0.15.5+"
+asm_version = "9.7.1"
+commons_lang_version = "3.17.0"
 
 [libraries]
 fabric-loader = { module = "net.fabricmc:fabric-loader", version.ref = "fabric_loader_version" }
