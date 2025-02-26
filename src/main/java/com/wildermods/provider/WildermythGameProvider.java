@@ -141,7 +141,7 @@ public class WildermythGameProvider implements GameProvider {
 				.setDescription("A procedural storytelling RPG where tactical combat and story decisions will alter your world and reshape your cast of characters.");
 		
 		BuiltinModMetadata.Builder asmMetaData = 
-				new BuiltinModMetadata.Builder("asm", ASM.getApiVersionString())
+				new BuiltinModMetadata.Builder("asm", Opcodes.class.getPackage().getImplementationVersion())
 				.setName(ASM.getVersionString())
 				.addAuthor("INRIA, France Telecom", wildermythContactInformation)
 				.setContact(new ContactInformationImpl(asmContactInformation))
