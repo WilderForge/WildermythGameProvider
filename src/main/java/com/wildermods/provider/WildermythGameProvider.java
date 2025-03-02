@@ -242,7 +242,7 @@ public class WildermythGameProvider implements GameProvider {
 			String gameJarProperty = System.getProperty(SystemProperties.GAME_JAR_PATH);
 			GameProviderHelper.FindResult result = null;
 			if(gameJarProperty == null) {
-				gameJarProperty = "./wildermyth.jar";
+				gameJarProperty = getLaunchDirectory().resolve("wildermyth.jar").toString();
 			}
 			if(gameJarProperty != null) {
 				Path path = Paths.get(gameJarProperty);
@@ -504,10 +504,10 @@ public class WildermythGameProvider implements GameProvider {
 	}
 	
 	private StringVersion getGameVersion() {
-		File versionFile = new File("./version.txt");
+		Path versionFile = getLaunchDirectory().resolve("version.txt");
 		try {
-			if(versionFile.exists()) {
-				return new StringVersion(Files.readString(versionFile.toPath()).split(" ")[0]);
+			if(Files.exists(versionFile)) {
+				return new StringVersion(Files.readString(versionFile).split(" ")[0]);
 			}
 		}
 		catch(IOException e) {
