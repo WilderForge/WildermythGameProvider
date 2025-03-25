@@ -401,9 +401,10 @@ public class WildermythGameProvider implements GameProvider {
 	@Override
 	public boolean displayCrash(Throwable t, String context) {
 		try {
-			Method logCrash = crashLogService.getClass().getDeclaredMethod("logCrash", Throwable.class);
-			logCrash.invoke(crashLogService, t);
-			
+			if(crashLogService != null) {
+				Method logCrash = crashLogService.getClass().getDeclaredMethod("logCrash", Throwable.class);
+				logCrash.invoke(crashLogService, t);
+			}
 		} catch (Throwable t2) {
 			throw new Error(t2);
 		}
