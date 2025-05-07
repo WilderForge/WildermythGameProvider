@@ -1,6 +1,6 @@
 [versions]
 fabric_loader_version = "0.16.9"
-mixin_version = "0.15.5+"
+mixin_version = "0.15.5+mixin.0.8.7"
 asm_version = "9.7.1"
 commons_lang_version = "3.17.0"
 
