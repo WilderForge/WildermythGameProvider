@@ -3,7 +3,6 @@ package com.wildermods.provider;
 import java.io.File;
 import java.io.IOError;
 import java.io.IOException;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
@@ -63,6 +62,7 @@ public class WildermythGameProvider implements GameProvider {
 	private static final Path PROVIDER_SETTINGS_FILE = Path.of(".").normalize().resolve("providerSettings.json");
 	private static final ProviderSettings SETTINGS;
 	static {
+		Log.configureBuiltin(true, true);
 		ProviderSettings settings;
 		try {
 			settings = ProviderSettings.fromJson(PROVIDER_SETTINGS_FILE);
