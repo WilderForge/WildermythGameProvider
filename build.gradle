@@ -36,6 +36,10 @@ dependencies {
 	compileOnly libs.asm.tree
 	compileOnly libs.asm.util
 	
+	compileOnly libs.log4j.core
+	compileOnly libs.log4j.api
+	compileOnly libs.log4j.slf4j2.impl
+	
 	implementation(libs.commons.lang) {
 		transitive = false
 	}
