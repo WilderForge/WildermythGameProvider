@@ -36,6 +36,7 @@ import com.google.gson.JsonSyntaxException;
 import com.wildermods.provider.patch.LegacyPatch;
 import com.wildermods.provider.services.CrashLogService;
 import com.wildermods.provider.steam.Steam;
+import com.wildermods.provider.util.logging.Logger;
 
 import net.fabricmc.loader.impl.FormattedException;
 import net.fabricmc.loader.impl.game.GameProvider;
@@ -66,7 +67,7 @@ public class WildermythGameProvider implements GameProvider {
 		try {
 			settings = ProviderSettings.fromJson(PROVIDER_SETTINGS_FILE);
 		} catch (JsonIOException | JsonSyntaxException | IOException e) {
-			e.printStackTrace();
+			Log.error(LogCategory.GAME_PROVIDER, "Could not load provider settings. Using default settings. ", e);
 			settings = new ProviderSettings();
 		}
 		SETTINGS = settings;
@@ -176,7 +177,7 @@ public class WildermythGameProvider implements GameProvider {
 		}
 		
 		for(BuiltinMod mod : builtinMods) {
-			System.out.println("Built in mod " + mod.metadata.getName() + " version " + mod.metadata.getVersion() + " defined");
+			Log.info(LogCategory.DISCOVERY, "Built in mod " + mod.metadata.getName() + " version " + mod.metadata.getVersion() + " defined");
 		}
 		
 		
@@ -220,7 +221,7 @@ public class WildermythGameProvider implements GameProvider {
 				gatherWorkshopCoremods();
 			}
 			else {
-				System.out.println("WORKSHOP COREMODS DISABLED");
+				Log.error(LogCategory.DISCOVERY, "WORKSHOP COREMODS DISABLED");
 			}
 		} catch (IOException e) {
 			throw new Error(e);
@@ -296,15 +297,29 @@ public class WildermythGameProvider implements GameProvider {
 	
 	private void initializeLogging(ClassLoader loader) {
 		ClassLoader prevCL = Thread.currentThread().getContextClassLoader();
+		
+		crashLogService = null;
+
 		try {
-			Constructor<? extends LogHandler> loggerClass = (Constructor<? extends LogHandler>) loader.loadClass("com.wildermods.wilderforge.launch.logging.Logger").getConstructor(String.class);
-			LogHandler logHandler = loggerClass.newInstance("Fabric Loader");
-			Log.init(logHandler);
-			logHandler.log(0, LogLevel.ERROR, LogCategory.GENERAL, "Logging Initialized", null, false, false);
+			crashLogService = CrashLogService.obtain();
+		}
+		catch(Throwable t) {
+			throw new Error(t);
+		}
+		
+		LogHandler logHandler = null;
+		try {
+			//Constructor<? extends LogHandler> loggerClass = (Constructor<? extends LogHandler>) loader.loadClass("com.wildermods.provider.util.logging.Logger").getConstructor(String.class);
+			//logHandler = loggerClass.newInstance("Fabric Loader");
+			Log.init(new Logger("Fabric Loader"));
+			Log.log(LogLevel.ERROR, LogCategory.GAME_PATCH, "Logging Initialized");
 			
 		} catch (Throwable t) {
-			t.printStackTrace();
+			Log.error(LogCategory.GAME_PROVIDER, "Crash log service could not be defined", t);
 		}
+
+		Log.log(LogLevel.ERROR, LogCategory.GAME_PROVIDER, "Crash log service is: " + crashLogService);
+		
 		Thread.currentThread().setContextClassLoader(prevCL);
 	}
 
@@ -313,34 +328,34 @@ public class WildermythGameProvider implements GameProvider {
 		for(File dep : lib.listFiles()) {
 			if(dep.getName().endsWith(".jar")) {
 				miscGameLibraries.add(dep.toPath());
-				System.out.println("Adding " + dep);
+				Log.log(LogLevel.TRACE, LogCategory.GAME_PROVIDER, "Adding " + dep);
 			}
 			else {
-				System.out.println("Skipping non-jar dependency " + dep);
+				Log.log(LogLevel.TRACE, LogCategory.GAME_PROVIDER, "Skipping non-jar dependency " + dep);
 			}
 		}
 		
 		for(File dep : launchDir.toFile().listFiles()) {
 			if(dep.getName().endsWith(".jar")) {
 				if(dep.getName().equals("wildermyth.jar")) {
-					System.out.println("Skipping wildermyth.jar");
+					Log.log(LogLevel.TRACE, LogCategory.GAME_PROVIDER,"Skipping wildermyth.jar");
 				}
 				else if (dep.getName().contains("wilderforge-")) {
-					System.out.println("Skipping " + dep.getName() + " because we are in a development environment");
+					Log.log(LogLevel.WARN, LogCategory.GAME_PROVIDER, "Skipping " + dep.getName() + " because we are in a development environment");
 				}
 				else if(dep.getPath().contains("fabric/") || dep.getName().startsWith("fabric-")) {
-					System.out.println("Skipping fabric dep " + dep.getName());
+					Log.log(LogLevel.TRACE, LogCategory.GAME_PROVIDER, "Skipping fabric dep " + dep.getName());
 				}
 				else if(dep.getName().startsWith("provider")) {
-					System.out.println("Skipping game provider " + dep.getName());
+					Log.log(LogLevel.TRACE, LogCategory.GAME_PROVIDER, "Skipping game provider " + dep.getName());
 				}
 				else if (dep.getName().endsWith(".jar")) {
-					System.out.println("Adding " + dep.toPath());
+					Log.log(LogLevel.TRACE, LogCategory.GAME_PROVIDER, "Adding " + dep.toPath());
 					miscGameLibraries.add(dep.toPath());
 				}
 			}
 			else {
-				System.out.println("Skipping non-jar file " + dep);
+				Log.log(LogLevel.TRACE, LogCategory.GAME_PROVIDER, "Skipping non-jar file " + dep);
 			}
 		}
 
@@ -348,6 +363,9 @@ public class WildermythGameProvider implements GameProvider {
 
 	@Override
 	public void initialize(FabricLauncher launcher) {
+		
+		initializeLogging(launcher.getTargetClassLoader());
+		
 		TRANSFORMER.locateEntrypoints(launcher, List.of(gameJar));
 	}
 
@@ -371,17 +389,6 @@ public class WildermythGameProvider implements GameProvider {
 		
 		initializeLogging(loader);
 		String targetClass = entrypoint;
-		
-		crashLogService = null;
-
-		try {
-			crashLogService = CrashLogService.obtain();
-		}
-		catch(Throwable t) {
-			throw new Error(t);
-		}
-		
-		System.err.println("Crash log service is: " + crashLogService);
 		
 		
 		try {
@@ -448,7 +455,7 @@ public class WildermythGameProvider implements GameProvider {
 		}
 		
 		launchDir = Path.of(arguments.get("gameDir"));
-		System.out.println("Launch directory is " + launchDir);
+		Log.info(LogCategory.ENTRYPOINT, "Launch directory is " + launchDir);
 		
 		if(!arguments.containsKey("libDir")) {
 			libDir = launchDir.resolve("lib");
@@ -457,12 +464,12 @@ public class WildermythGameProvider implements GameProvider {
 			libDir = Path.of(arguments.get("libDir"));
 		}
 
-		System.out.println("Lib directory is " + libDir);
+		Log.info(LogCategory.DISCOVERY, "Lib directory is " + libDir);
 		
 		if(!Files.exists(libDir)) {
 			try {
 				Files.createDirectories(libDir);
-				System.out.println("Created " + libDir);
+				Log.trace(LogCategory.GAME_PROVIDER, "Created " + libDir);
 			} catch (IOException e) {
 				throw new IOError(e);
 			}
@@ -487,7 +494,7 @@ public class WildermythGameProvider implements GameProvider {
 				@Override
 				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
 					if (file.toString().endsWith(".jar")) {
-						System.out.println("Adding workshop coremod at " + file);
+						Log.warn(LogCategory.DISCOVERY, "Adding workshop coremod at " + file);
 						addedMods.add(file.normalize().toAbsolutePath().toString());  // Add the first JAR found
 						return FileVisitResult.SKIP_SIBLINGS;  // Skip other files in the same mod folder
 					}
@@ -497,7 +504,7 @@ public class WildermythGameProvider implements GameProvider {
 			
 		}
 		else {
-			System.out.println("Could not locate worshop mod directory at " + Steam.Workshop.getModDir());
+			Log.warn(LogCategory.DISCOVERY, "Could not locate worshop mod directory at " + Steam.Workshop.getModDir());
 		}
 		
 		System.setProperty(ADD_MODS, addedMods.toString());
