@@ -7,12 +7,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import java.net.URISyntaxException;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -22,7 +19,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.StringJoiner;
+import java.util.regex.Pattern;
 import java.util.zip.ZipFile;
 
 import org.objectweb.asm.Opcodes;
@@ -34,9 +31,10 @@ import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
 import com.wildermods.provider.patch.LegacyPatch;
 import com.wildermods.provider.services.CrashLogService;
-import com.wildermods.provider.steam.Steam;
 import com.wildermods.provider.util.logging.Logger;
 
+import net.fabricmc.loader.api.FabricLoader;
+import net.fabricmc.loader.api.ModContainer;
 import net.fabricmc.loader.impl.FormattedException;
 import net.fabricmc.loader.impl.game.GameProvider;
 import net.fabricmc.loader.impl.game.GameProviderHelper;
@@ -66,6 +64,7 @@ public class WildermythGameProvider implements GameProvider {
 		ProviderSettings settings;
 		try {
 			settings = ProviderSettings.fromJson(PROVIDER_SETTINGS_FILE);
+			checkNoWorkshopCoremods();
 		} catch (JsonIOException | JsonSyntaxException | IOException e) {
 			Log.error(LogCategory.GAME_PROVIDER, "Could not load provider settings. Using default settings. ", e);
 			settings = new ProviderSettings();
@@ -216,18 +215,12 @@ public class WildermythGameProvider implements GameProvider {
 	@Override
 	public boolean locateGame(FabricLauncher launcher, String[] args) {
 		System.setProperty("fabric.debug.disableClassPathIsolation", "");
-		try {
-			if("true".equals(System.getProperty("steam.workshop.coremods")) || SETTINGS.workshopCoremodsEnabled()) {
-				gatherWorkshopCoremods();
-			}
-			else {
-				Log.error(LogCategory.DISCOVERY, "WORKSHOP COREMODS DISABLED");
-			}
-		} catch (IOException e) {
-			throw new Error(e);
+		
+		if("true".equals(System.getProperty("steam.workshop.coremods")) || SETTINGS.workshopCoremodsEnabled()) {
+			Log.warn(LogCategory.DISCOVERY, "Ignoring workshop coremod flag. The ability to load coremods from the steam workshop has been permanently disabled. See https://github.com/WilderForge/WildermythGameProvider/issues/19");
 		}
 		
-
+		System.getProperty(ADD_MODS);
 		
 		
 		this.arguments = new Arguments();
@@ -376,6 +369,14 @@ public class WildermythGameProvider implements GameProvider {
 
 	@Override
 	public void unlockClassPath(FabricLauncher launcher) {
+		for (ModContainer mod : FabricLoader.getInstance().getAllMods()) {
+			for (Path path : mod.getRootPaths()) {
+				String absPath = path.toAbsolutePath().toString();
+				if (absPath.contains("steamapps" + File.separator + "workshop")) {
+					throw new VerifyError("REFUSING to load workshop coremod at " + path);
+				}
+			}
+		}
 		launcher.addToClassPath(gameJar);
 		
 		for(Path lib : miscGameLibraries) {
@@ -477,38 +478,22 @@ public class WildermythGameProvider implements GameProvider {
 		
 	}
 	
-	private static Path getLaunchDirectory(Arguments arguments) {
-		return Paths.get(arguments.getOrDefault("gameDir", "."));
+	private static final void checkNoWorkshopCoremods() throws IOException {
+		String addedMods = System.getProperty(ADD_MODS);
+		
+		if(addedMods != null) {
+		
+			for(String s : addedMods.split(Pattern.quote(File.pathSeparator))) {
+				if(s.toLowerCase().contains("steamapps" + File.separator + "workshop")) {
+					throw new VerifyError("REFUSING to load workshop coremod at " + s);
+				}
+			}
+		}
+
 	}
 	
-	private static final void gatherWorkshopCoremods() throws IOException {
-		StringJoiner addedMods = new StringJoiner(File.pathSeparator);
-		
-		if(System.getProperty(ADD_MODS) != null) {
-			addedMods.add(System.getProperty(ADD_MODS));
-		}
-		
-		if(Files.exists(Steam.Workshop.getModDir())) {
-		
-			Files.walkFileTree(Steam.Workshop.getModDir(), new SimpleFileVisitor<Path>() {
-				@Override
-				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-					if (file.toString().endsWith(".jar")) {
-						Log.warn(LogCategory.DISCOVERY, "Adding workshop coremod at " + file);
-						addedMods.add(file.normalize().toAbsolutePath().toString());  // Add the first JAR found
-						return FileVisitResult.SKIP_SIBLINGS;  // Skip other files in the same mod folder
-					}
-					return FileVisitResult.CONTINUE;
-				}
-			});
-			
-		}
-		else {
-			Log.warn(LogCategory.DISCOVERY, "Could not locate worshop mod directory at " + Steam.Workshop.getModDir());
-		}
-		
-		System.setProperty(ADD_MODS, addedMods.toString());
-
+	private static Path getLaunchDirectory(Arguments arguments) {
+		return Paths.get(arguments.getOrDefault("gameDir", "."));
 	}
 	
 	private StringVersion getGameVersion() {

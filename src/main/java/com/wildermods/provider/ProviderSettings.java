@@ -9,13 +9,13 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
-import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 
 public class ProviderSettings {
 	
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-	private @SerializedName("_WARNING_WARNING_") String NOTICE = "WARNING - Enabling coremods from the steam workshop does impose a security risk. Additionally, an automatic update to a coremod may break your game unexpectedly. Enabling workshop coremods is not recommended unless you know and understand the risks. Workshop coremod loading may be disabled entirely in future versions if it causes too many issues.";
+	
+	@Deprecated
 	private boolean enableWorkshopCoremods = false;
 	
 	public ProviderSettings() {
@@ -27,7 +27,7 @@ public class ProviderSettings {
 	}
 	
 	public boolean workshopCoremodsEnabled() {
-		return enableWorkshopCoremods;
+		return false;
 	}
 	
 	public static ProviderSettings fromJson(Path file) throws JsonIOException, JsonSyntaxException, IOException {
