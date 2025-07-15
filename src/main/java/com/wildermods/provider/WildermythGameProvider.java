@@ -269,11 +269,10 @@ public class WildermythGameProvider implements GameProvider {
 	
 	private void initializeLogging(ClassLoader loader) {
 		ClassLoader prevCL = Thread.currentThread().getContextClassLoader();
-		Thread.currentThread().setContextClassLoader(loader);
 		crashLogService = null;
 
 		try {
-			crashLogService = CrashLogService.obtain();
+			crashLogService = CrashLogService.obtain(loader);
 		}
 		catch(Throwable t) {
 			throw new Error(t);
@@ -366,8 +365,7 @@ public class WildermythGameProvider implements GameProvider {
 
 	@Override
 	public void launch(ClassLoader loader) {
-		
-		initializeLogging(loader);
+
 		String targetClass = entrypoint;
 		
 		

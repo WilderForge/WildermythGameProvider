@@ -17,8 +17,8 @@ public interface CrashLogService {
 	public static CrashLogService obtain(ClassLoader loader, boolean override) {
 		if(Internal.service == null || override) {
 			Internal.service = ServiceLoader.load(CrashLogService.class, loader).findFirst().orElse(null);
+			Internal.gameLoader = loader;
 		}
-		Internal.gameLoader = loader;
 		return Internal.service;
 	}
 	
@@ -29,8 +29,8 @@ public interface CrashLogService {
 	public static CrashLogService obtain(boolean override) {
 		if(Internal.service == null || override) {
 			Internal.service = ServiceLoader.load(CrashLogService.class).findFirst().orElse(null);
+			Internal.gameLoader = CrashLogService.class.getClassLoader();
 		}
-		Internal.gameLoader = CrashLogService.class.getClassLoader();
 		return Internal.service;
 	}
 	
