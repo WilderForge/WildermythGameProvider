@@ -64,10 +64,14 @@ public class WildermythGameProvider implements GameProvider {
 		ProviderSettings settings;
 		try {
 			settings = ProviderSettings.fromJson(PROVIDER_SETTINGS_FILE);
-			checkNoWorkshopCoremods();
 		} catch (JsonIOException | JsonSyntaxException | IOException e) {
 			Log.error(LogCategory.GAME_PROVIDER, "Could not load provider settings. Using default settings. ", e);
 			settings = new ProviderSettings();
+		}
+		try {
+			checkNoWorkshopCoremods();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
 		}
 		SETTINGS = settings;
 	}
