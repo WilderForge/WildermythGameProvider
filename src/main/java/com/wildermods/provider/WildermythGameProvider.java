@@ -23,12 +23,14 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipFile;
 
 import org.objectweb.asm.Opcodes;
-import org.spongepowered.asm.launch.MixinBootstrap;
+
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.util.asm.ASM;
 
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
+
+import com.wildermods.provider.internal.ASMMetadataRetriever;
+import com.wildermods.provider.internal.FabricMixinMetadataRetriever;
 import com.wildermods.provider.patch.LegacyPatch;
 import com.wildermods.provider.services.CrashLogService;
 import com.wildermods.provider.util.logging.Logger;
@@ -118,64 +120,37 @@ public class WildermythGameProvider implements GameProvider {
 		wildermythContactInformation.put("issues", "https://discord.gg/wildermyth");
 		wildermythContactInformation.put("license", "https://wildermyth.com/terms.php");
 		
-		HashMap<String, String> asmContactInformation = new HashMap<>();
-		asmContactInformation.put("homepage", "https://asm.ow2.io/index.html");
-		asmContactInformation.put("issues", "https://gitlab.ow2.org/asm/asm/-/issues");
-		asmContactInformation.put("sources", "https://gitlab.ow2.org/asm/asm");
-		asmContactInformation.put("license", "https://asm.ow2.io/license.html");
-		
-		HashMap<String, String> fabricMixinContactInformation = new HashMap<>();
-		
-		fabricMixinContactInformation.put("homepage", "https://github.com/FabricMC/Mixin");
-		fabricMixinContactInformation.put("issues", "https://github.com/FabricMC/Mixin/issues");
-		fabricMixinContactInformation.put("sources", "https://github.com/FabricMC/Mixin");
-		fabricMixinContactInformation.put("license", "https://github.com/FabricMC/Mixin/blob/main/LICENSE.txt");
-		
-		HashMap<String, String> mixinContactInformation = new HashMap<>();
-		mixinContactInformation.put("homepage", "https://github.com/SpongePowered/Mixin");
-		mixinContactInformation.put("issues", "https://github.com/SpongePowered/Mixin/issues");
-		mixinContactInformation.put("sources", "https://github.com/SpongePowered/Mixin");
-		mixinContactInformation.put("license", "https://github.com/SpongePowered/Mixin/blob/master/LICENSE.txt");
-		
-		BuiltinModMetadata.Builder wildermythMetaData = 
+		BuiltinModMetadata.Builder wildermythMetaData = null;
+		try {
+			wildermythMetaData = 
 				new BuiltinModMetadata.Builder(getGameId(), getNormalizedGameVersion())
 				.setName(getGameName())
 				.addAuthor("Worldwalker Games, LLC.", wildermythContactInformation)
 				.setContact(new ContactInformationImpl(wildermythContactInformation))
 				.setDescription("A procedural storytelling RPG where tactical combat and story decisions will alter your world and reshape your cast of characters.");
+		}
+		catch(LinkageError e) {
+			//TODO: if we are in a launcher context, catch and swallow so the launcher knows no game was found
+			// If we are actively launching the game, throw the linkage error. We don't know what version of the game is running
+			// (or if it even exists).
+			throw e;
+		}
 		
-		BuiltinModMetadata.Builder asmMetaData = 
-				new BuiltinModMetadata.Builder("asm", Opcodes.class.getPackage().getImplementationVersion())
-				.setName(ASM.getVersionString())
-				.addAuthor("INRIA, France Telecom", wildermythContactInformation)
-				.setContact(new ContactInformationImpl(asmContactInformation))
-				.setDescription("ASM is an all purpose Java bytecode manipulation and analysis framework. It can be used to modify existing classes or to dynamically generate classes, directly in binary form."
-						+ "\n\n"
-						+ "Currently supports " + ASM.getClassVersionString())
-				.addLicense("https://asm.ow2.io/license.html");
+		BuiltinModMetadata.Builder asmMetaData = ASMMetadataRetriever.retrieve();
 		
-		BuiltinModMetadata.Builder mixinMetaData = 
-				new BuiltinModMetadata.Builder("mixin", MixinBootstrap.VERSION)
-				.setName("Spongepowered Mixin (Fabric Fork)")
-				.addAuthor("Mumfrey", mixinContactInformation)
-				.addAuthor("FabricMC Team", fabricMixinContactInformation)
-				.addAuthor("Spongepowered Team", mixinContactInformation)
-				.setContact(new ContactInformationImpl(fabricMixinContactInformation))
-				.setDescription("""
-						FabricMC's fork of Mixin, A bytecode weaving framework for Java using ASM.
-						
-						Original by Mumfrey.
-						""")
-				.addLicense("https://github.com/SpongePowered/Mixin/blob/master/LICENSE.txt");
+		BuiltinModMetadata.Builder mixinMetaData = FabricMixinMetadataRetriever.retrieve();
 		
 		ArrayList<BuiltinMod> builtinMods = new ArrayList<>();
-		builtinMods.add(new BuiltinMod(List.of(gameJar), wildermythMetaData.build()));
 		
-		if(asmJar != null) {
+		if(wildermythMetaData != null) {
+			builtinMods.add(new BuiltinMod(List.of(gameJar), wildermythMetaData.build()));
+		}
+		
+		if(asmJar != null && asmMetaData != null) {
 			builtinMods.add(new BuiltinMod(List.of(asmJar), asmMetaData.build()));
 		}
 		
-		if(mixinJar != null) {
+		if(mixinJar != null && mixinMetaData != null) {
 			builtinMods.add(new BuiltinMod(List.of(mixinJar), mixinMetaData.build()));
 		}
 		
@@ -508,9 +483,11 @@ public class WildermythGameProvider implements GameProvider {
 			}
 		}
 		catch(IOException e) {
-			throw new Error("Could not detect wildermyth version");
+			LinkageError err = new LinkageError("Could not detect wildermyth version");
+			err.initCause(e);
+			throw err;
 		}
-		throw new Error("Could not detect wildermyth version. Missing versions.txt?");
+		throw new LinkageError("Could not detect wildermyth version. Missing versions.txt?");
 	}
 
 }
