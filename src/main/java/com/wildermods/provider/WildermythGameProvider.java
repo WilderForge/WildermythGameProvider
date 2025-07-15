@@ -269,7 +269,7 @@ public class WildermythGameProvider implements GameProvider {
 	
 	private void initializeLogging(ClassLoader loader) {
 		ClassLoader prevCL = Thread.currentThread().getContextClassLoader();
-		
+		Thread.currentThread().setContextClassLoader(loader);
 		crashLogService = null;
 
 		try {
