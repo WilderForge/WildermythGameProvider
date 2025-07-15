@@ -13,6 +13,9 @@ repositories {
 	maven {
 		url "https://maven.fabricmc.net/"
 	}
+	maven {
+		url "https://maven.wildermods.com"
+	}
 	mavenLocal()
 }
 
