@@ -1,5 +1,5 @@
 [versions]
-fabric_loader_version = "0.16.14+WilderForge.0.1.0"
+fabric_loader_version = "0.17.2+"
 mixin_version = "0.16.4+"
 asm_version = "9.8"
 commons_lang_version = "3.18.0"
