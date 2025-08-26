@@ -14,11 +14,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.zip.ZipFile;
 
@@ -174,11 +176,6 @@ public class WildermythGameProvider implements GameProvider {
 		}
 		
 		return getLaunchDirectory(arguments);
-	}
-
-	@Override
-	public boolean isObfuscated() {
-		return false;
 	}
 
 	@Override
@@ -486,6 +483,21 @@ public class WildermythGameProvider implements GameProvider {
 			throw err;
 		}
 		throw new LinkageError("Could not detect wildermyth version. Missing versions.txt?");
+	}
+
+	private static final Set<BuiltinTransform> TRANSFORM_WIDENALL_CLASSTWEAKS = EnumSet.of(BuiltinTransform.WIDEN_ALL_PACKAGE_ACCESS, BuiltinTransform.CLASS_TWEAKS);
+	
+	@Override
+	public Set<BuiltinTransform> getBuiltinTransforms(String className) {
+		boolean isWildermythClass = 
+			className.startsWith("com.worldwalkergames.") ||
+			className.startsWith("com.badlogic.gdx.") ||
+			className.startsWith("org.fmod.") ||
+			className.startsWith("com.codedisaster.steamworks.");
+		if(isWildermythClass) {
+			return TRANSFORM_WIDENALL_CLASSTWEAKS;
+		}
+		return Collections.emptySet();
 	}
 
 }
