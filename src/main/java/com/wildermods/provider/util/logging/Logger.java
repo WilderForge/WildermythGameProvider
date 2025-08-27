@@ -64,7 +64,7 @@ public class Logger implements ILogger {
 
 	@Override
 	public boolean shouldLog(LogLevel level) {
-		return logger.getLevel().isInRange(LogLevel.FATAL.toLog4j(), level.toLog4j());
+		return logger.getLevel().isLessSpecificThan(level.toLog4j());
 	}
 
 }
