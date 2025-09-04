@@ -2,16 +2,45 @@ package com.wildermods.provider.util.logging;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.MarkerManager;
+import org.apache.logging.log4j.core.config.AppenderRef;
+import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.Configurator;
 
+import org.apache.logging.log4j.core.LoggerContext; // <- must be core!
 import net.fabricmc.loader.impl.util.log.LogCategory;
 
 public class Logger implements ILogger {
 	
+	private static final LogLevel DEFAULT_LEVEL;
+	static {
+		Configuration logConfig = ((LoggerContext)LogManager.getContext(false)).getConfiguration();
+		LogLevel defaultLevel = null;
+		for(AppenderRef ref : logConfig.getRootLogger().getAppenderRefs()) {
+			if(ref.getRef().equals("SysOut")) {
+				defaultLevel = LogLevel.getLevel(ref.getLevel());
+				break;
+			}
+		}
+		Logger logger;
+		if(defaultLevel == null) {
+			DEFAULT_LEVEL = LogLevel.INFO;
+			logger = new Logger("Logger");
+			logger.warn("Could not find reference 'SysOut' in log4j configuration.", "init");
+		}
+		else {
+			DEFAULT_LEVEL = defaultLevel;
+			logger = new Logger("Logger");
+		}
+		LogLevel level = DEFAULT_LEVEL;
+		if(level.ordinal() < LogLevel.INFO.ordinal()) {
+			level = LogLevel.INFO;
+		}
+		logger.log(level, "Logging " + DEFAULT_LEVEL + " or higher");
+	}
 	private final org.apache.logging.log4j.Logger logger;
 	
 	public Logger(Class clazz) {
-		this(clazz.getSimpleName(), LogLevel.INFO);
+		this(clazz.getSimpleName(), DEFAULT_LEVEL);
 	}
 	
 	public Logger(Class clazz, LogLevel minLevel) {

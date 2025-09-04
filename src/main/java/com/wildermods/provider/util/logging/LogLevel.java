@@ -60,11 +60,23 @@ public enum LogLevel {
 		}
 		
 		public static LogLevel getLevel(org.apache.logging.log4j.Level level) {
-			LogLevel logLevel = LogLevel.valueOf(level.name());
-			if(logLevel == null) {
-				logLevel = INFO;
+			switch(level.getStandardLevel()) {
+				case ALL:
+				case TRACE:
+					return LogLevel.TRACE;
+				case DEBUG:
+					return LogLevel.DEBUG;
+				default:
+				case INFO:
+					return LogLevel.INFO;
+				case WARN:
+					return LogLevel.WARN;
+				case ERROR:
+					return LogLevel.ERROR;
+				case FATAL:
+					return LogLevel.FATAL;
+			
 			}
-			return logLevel;
 		}
 		
 		public static LogLevel getLevel(int level) {
