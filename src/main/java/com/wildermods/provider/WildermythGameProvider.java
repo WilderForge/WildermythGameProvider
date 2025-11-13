@@ -265,9 +265,30 @@ public class WildermythGameProvider implements GameProvider {
 	}
 	
 	private void initializeLogging(ClassLoader loader) {
-		ClassLoader prevCL = Thread.currentThread().getContextClassLoader();
 		crashLogService = null;
 
+		Enumeration<URL> urls;
+		try {
+			urls = loader.getResources("META-INF/services/com.wildermods.provider.services.CrashLogService");
+			System.out.println("searching " + loader);
+			while (urls.hasMoreElements()) {
+			    System.out.println(loader + "Found service config in: " + urls.nextElement());
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		try {
+			urls = WildermythGameProvider.class.getClassLoader().getResources("META-INF/services/com.wildermods.provider.services.CrashLogService");
+			System.out.println("searching " + WildermythGameProvider.class.getClassLoader());
+			while (urls.hasMoreElements()) {
+			    System.out.println(WildermythGameProvider.class.getClassLoader() + "Found service config in: " + urls.nextElement());
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		
 		try {
 			crashLogService = CrashLogService.obtain(loader);
 		}
@@ -287,8 +308,6 @@ public class WildermythGameProvider implements GameProvider {
 		}
 
 		Log.log(LogLevel.ERROR, LogCategory.GAME_PROVIDER, "Crash log service is: " + crashLogService);
-		
-		Thread.currentThread().setContextClassLoader(prevCL);
 	}
 
 	private void locateFilesystemDependencies() {
