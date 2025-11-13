@@ -7,6 +7,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -15,6 +16,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -111,7 +113,7 @@ public class WildermythGameProvider implements GameProvider {
 
 	@Override
 	public String getNormalizedGameVersion() {
-		return getRawGameVersion();
+		return getRawGameVersion().split(" ")[0].replace('+', '.');
 	}
 
 	@Override
@@ -493,7 +495,7 @@ public class WildermythGameProvider implements GameProvider {
 		Path versionFile = getLaunchDirectory().resolve("version.txt");
 		try {
 			if(Files.exists(versionFile)) {
-				return new StringVersion(Files.readString(versionFile).split(" ")[0]);
+				return new StringVersion(Files.readString(versionFile));
 			}
 		}
 		catch(IOException e) {
