@@ -514,7 +514,8 @@ public class WildermythGameProvider implements GameProvider {
 			className.startsWith("com.worldwalkergames.") ||
 			className.startsWith("com.badlogic.gdx.") ||
 			className.startsWith("org.fmod.") ||
-			className.startsWith("com.codedisaster.steamworks.");
+			className.startsWith("com.codedisaster.steamworks.") ||
+			className.startsWith("org.lwjgl.");
 		if(isWildermythClass) {
 			return TRANSFORM_WIDENALL_CLASSTWEAKS;
 		}
