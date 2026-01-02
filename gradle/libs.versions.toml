@@ -1,6 +1,6 @@
 [versions]
-fabric_loader_version = "0.17.2+WilderForge.0.2.1"
-mixin_version = "0.16.4+mixin.0.8.7"
+fabric_loader_version = "0.18.4+WilderForge.0.3.0"
+mixin_version = "0.17.0+mixin.0.8.7"
 asm_version = "9.8"
 commons_lang_version = "3.18.0"
 log4j_version = "2.25.1"
