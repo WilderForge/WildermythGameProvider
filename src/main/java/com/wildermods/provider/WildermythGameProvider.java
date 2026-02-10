@@ -1,6 +1,7 @@
 package com.wildermods.provider;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOError;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -23,6 +24,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 import java.util.zip.ZipFile;
 
@@ -35,6 +38,7 @@ import com.google.gson.JsonSyntaxException;
 
 import com.wildermods.provider.internal.ASMMetadataRetriever;
 import com.wildermods.provider.internal.FabricMixinMetadataRetriever;
+import com.wildermods.provider.loader.util.OS;
 import com.wildermods.provider.patch.LegacyPatch;
 import com.wildermods.provider.services.CrashLogService;
 import com.wildermods.provider.util.logging.Logger;
@@ -89,12 +93,63 @@ public class WildermythGameProvider implements GameProvider {
 	private Path gameJar;
 	private Path asmJar;
 	private Path mixinJar;
-	private boolean development = false;
 	private final List<Path> miscGameLibraries = new ArrayList<>();
 	
 	private CrashLogService crashLogService;
 	
 	private static final GameTransformer TRANSFORMER = new GameTransformer(new LegacyPatch());
+	
+	public WildermythGameProvider() throws IOException, InterruptedException, TimeoutException {
+		if(SystemProperties.isSet(SystemProperties.ADD_MODS) && Boolean.getBoolean(SystemProperties.DEVELOPMENT)) {
+			if(System.getProperty(SystemProperties.ADD_MODS).contains("/build/nested-jars")) {
+				Path projectDir = Path.of("").toRealPath().getParent();
+				Path wrapper;
+				ProcessBuilder processBuilder;
+				Log.error(LogCategory.GAME_PROVIDER, "Development launch detected. Running prepareDevLaunch gradle task to ensure correct nested mod list.");
+				OS os = OS.getOS();
+				switch(os) {
+					case UNKNOWN: //fallthrough intentional
+					default:
+						Log.warn(LogCategory.GAME_PROVIDER, "Unknown operating system. Assuming linux/unix! will attempt to launch bash gradle wrapper");
+					case LINUX:
+					case MAC:
+						wrapper = projectDir.resolve("gradlew");
+						if(Files.isRegularFile(wrapper)) {
+							processBuilder = new ProcessBuilder("./gradlew", "prepareDevLaunch");
+						}
+						else {
+							throw new FileNotFoundException(wrapper.toString());
+						}
+						break;
+					case WINDOWS:
+						wrapper = projectDir.resolve("gradlew.bat");
+						if(Files.isRegularFile(wrapper)) {
+							processBuilder = new ProcessBuilder(
+								"cmd.exe",
+								"/c",
+								"gradlew.bat",
+								"prepareDevLaunch"
+							);
+						}
+						else {
+							throw new FileNotFoundException(wrapper.toString());
+						}
+						break;
+				}
+				processBuilder.directory(projectDir.toFile());
+				processBuilder.inheritIO();
+				Process p = processBuilder.start();
+				if(p.waitFor(30, TimeUnit.SECONDS)) {
+					if(p.exitValue() != 0) {
+						throw new IllegalStateException("prepareDevLaunch failed with exit code " + p.exitValue());
+					}
+				}
+				else {
+					throw new TimeoutException("prepareDevLaunch took too long to complete!");
+				}
+			}
+		}
+	}
 	
 	@Override
 	public String getGameId() {
@@ -205,10 +260,6 @@ public class WildermythGameProvider implements GameProvider {
 		arguments.parse(args);
 		Map<Path, ZipFile> zipFiles = new HashMap<>();
 		List<Path> lookupPaths = new ArrayList<>();
-		
-		if(System.getProperty(SystemProperties.DEVELOPMENT) == "true") {
-			development = true;
-		}
 		
 		try {
 			String gameJarProperty = System.getProperty(SystemProperties.GAME_JAR_PATH);
