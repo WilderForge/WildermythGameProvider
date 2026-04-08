@@ -19,12 +19,15 @@ repositories {
 	mavenLocal()
 }
 
-sourceCompatibility = '17'
-targetCompatibility = '17'
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
 
 version = providerVersion
 group = "com.wildermods"
-archivesBaseName = "provider"
+base.archivesName = "provider"
 
 dependencies {
 
@@ -85,7 +88,7 @@ tasks.register('checkArtifactExists') {
 		return
 	}
         def repoUrl = project.hasProperty('mavenRepoUrl') ? project.mavenRepoUrl : mavenLocalUrl
-        def artifactPath = "${repoUrl}/${project.group.replace('.', '/')}/${project.archivesBaseName}/${project.version}/${project.archivesBaseName}-${project.version}.jar"
+        def artifactPath = "${repoUrl}/${project.group.replace('.', '/')}/${project.base.archivesName.get()}/${project.version}/${project.base.archivesName.get()}-${project.version}.jar"
         logger.lifecycle("Checking if artifact exists at: $artifactPath")
         
         if (artifactPath.startsWith('file:/')) {
@@ -116,7 +119,7 @@ publishing {
         mavenJava(MavenPublication) {
             from components.java
             groupId = project.group
-            artifactId = project.archivesBaseName
+            artifactId = project.base.archivesName.get()
             version = project.version
 
             // Attach sources JAR to the publication
