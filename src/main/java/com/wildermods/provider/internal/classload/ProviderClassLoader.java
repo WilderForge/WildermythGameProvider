@@ -13,7 +13,6 @@ public class ProviderClassLoader extends URLClassLoader implements URLLoader {
 
 	static {
 		registerAsParallelCapable();
-		System.err.println("Provider classloader loaded by: " + ProviderClassLoader.class.getClassLoader());
 	}
 	
 	public ProviderClassLoader() {

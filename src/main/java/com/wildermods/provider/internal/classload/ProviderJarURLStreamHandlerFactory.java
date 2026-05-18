@@ -35,9 +35,6 @@ final class ProviderJarURLStreamHandlerFactory implements URLStreamHandlerFactor
 			}
 			
 	        if (defaultConn instanceof JarURLConnection) {
-	        	if(url.toString().contains("gameEngine")) {
-	        		System.out.println("Hmm....");
-	        	}
 	        	try {
 	        		connection = new ProviderJarURLConnection(url, (JarURLConnection) defaultConn);
 	        	}
@@ -46,10 +43,8 @@ final class ProviderJarURLStreamHandlerFactory implements URLStreamHandlerFactor
 	        	}
 	        }
 	        if (connection == null) {
-	        	System.err.println("Couldn't use ProviderURLConnection for " + url);
 	        	connection = defaultConn;
 	        }
-	        System.err.println("CONNECTION: " + connection.getClass() + " - " + connection.getURL());
 	        return connection;
 	    }
 		
