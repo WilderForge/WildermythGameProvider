@@ -2,7 +2,7 @@ plugins {
 	id 'java-library'
 	id 'eclipse'
 	id 'maven-publish'
-	id ('com.gradleup.shadow') version "8.3.3"
+	id ('com.gradleup.shadow') version "9.4.1"
 }
 
 repositories {
@@ -46,6 +46,10 @@ dependencies {
 	compileOnly libs.log4j.api
 	compileOnly libs.log4j.slf4j2.impl
 	
+	implementation(libs.gson) {
+		transitive = false
+	}
+	
 	implementation(libs.commons.lang) {
 		transitive = false
 	}
@@ -62,15 +66,13 @@ jar {
 }
 
 tasks.named('shadowJar', com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar) {
-	exclude '**/license.txt'
-	exclude '**/license'
-	exclude '**/notice.txt'
-	exclude '**/notice' 
-	exclude '**/LICENSE.txt'
-	exclude '**/LICENSE'
-	exclude '**/NOTICE.txt'
-	exclude '**/NOTICE' 
-	finalizedBy sourceJar
+    relocate 'com.google.gson', 'com.wildermods.shaded.gson'
+
+    // Exclude unnecessary license/notice files
+    exclude '**/license.txt', '**/license', '**/notice.txt', '**/notice'
+    exclude '**/LICENSE.txt', '**/LICENSE', '**/NOTICE.txt', '**/NOTICE'
+
+    finalizedBy sourceJar
 }
 
 ext.mavenLocalUrl = repositories.mavenLocal().url.toString()
