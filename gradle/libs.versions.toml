@@ -2,7 +2,7 @@
 fabric_loader_version = "0.19.1+WilderForge.0.5.0"
 mixin_version = "0.17.3+mixin.0.8.7"
 asm_version = "9.10"
-commons_lang_version = "3.18.0"
+commons_lang_version = "3.20.0"
 log4j_version = "2.26.0"
 gson_version = "2.14.0"
 
