@@ -1,9 +1,10 @@
 [versions]
-fabric_loader_version = "0.18.4+WilderForge.0.3.0"
-mixin_version = "0.17.0+mixin.0.8.7"
-asm_version = "9.9.1"
+fabric_loader_version = "0.19.1+WilderForge.0.5.0"
+mixin_version = "0.17.3+mixin.0.8.7"
+asm_version = "9.10"
 commons_lang_version = "3.20.0"
-log4j_version = "2.25.3"
+log4j_version = "2.26.0"
+gson_version = "2.14.0"
 
 [libraries]
 fabric-loader = { module = "com.wildermods:fabric-loader", version.ref = "fabric_loader_version" }
@@ -17,6 +18,7 @@ commons_lang = { module = "org.apache.commons:commons-lang3", version.ref = "com
 log4j_core = { module = "org.apache.logging.log4j:log4j-core", version.ref = "log4j_version" }
 log4j_api = { module = "org.apache.logging.log4j:log4j-api", version.ref = "log4j_version" }
 log4j_slf4j2_impl = { module = "org.apache.logging.log4j:log4j-slf4j2-impl", version.ref = "log4j_version" }
+gson = { module = "com.google.code.gson:gson", version.ref = "gson_version" }
 
 [bundles]
 fabric = ["fabric-loader", "mixin", "asm", "asm-analysis", "asm-commons", "asm-tree", "asm-util", "log4j-core", "log4j-api", "log4j-slf4j2-impl"]

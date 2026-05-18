@@ -6,7 +6,7 @@ import java.io.IOError;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-
+import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -38,6 +38,7 @@ import com.google.gson.JsonSyntaxException;
 
 import com.wildermods.provider.internal.ASMMetadataRetriever;
 import com.wildermods.provider.internal.FabricMixinMetadataRetriever;
+import com.wildermods.provider.internal.classload.ProviderClassLoader;
 import com.wildermods.provider.loader.util.OS;
 import com.wildermods.provider.patch.LegacyPatch;
 import com.wildermods.provider.services.CrashLogService;
@@ -50,6 +51,7 @@ import net.fabricmc.loader.impl.game.GameProvider;
 import net.fabricmc.loader.impl.game.GameProviderHelper;
 import net.fabricmc.loader.impl.game.patch.GameTransformer;
 import net.fabricmc.loader.impl.launch.FabricLauncher;
+import net.fabricmc.loader.impl.launch.knot.URLLoader;
 import net.fabricmc.loader.impl.metadata.BuiltinModMetadata;
 import net.fabricmc.loader.impl.metadata.ContactInformationImpl;
 import net.fabricmc.loader.impl.util.Arguments;
@@ -62,13 +64,14 @@ import net.fabricmc.loader.impl.util.version.StringVersion;
 import static net.fabricmc.loader.impl.util.SystemProperties.ADD_MODS;;
 
 public class WildermythGameProvider implements GameProvider {
-
+	
 	private static final String[] ENTRYPOINTS = new String[]{"com.worldwalkergames.legacy.LegacyDesktop"};
 	private static final String[] ASM_ = new String[] {"org.objectweb.asm.Opcodes"};
 	private static final String[] MIXIN = new String[] {"org.spongepowered.asm.mixin.Mixin"};
 	private static final HashSet<String> SENSITIVE_ARGS = new HashSet<String>(Arrays.asList(new String[] {}));
 	private static final Path PROVIDER_SETTINGS_FILE = Path.of(".").normalize().resolve("providerSettings.json");
 	private static final ProviderSettings SETTINGS;
+	private static final ProviderClassLoader providerCL = new ProviderClassLoader();
 	static {
 		Log.configureBuiltin(true, true);
 		ProviderSettings settings;
@@ -84,7 +87,39 @@ public class WildermythGameProvider implements GameProvider {
 			throw new RuntimeException(e);
 		}
 		SETTINGS = settings;
+		
+		if(System.getProperty("knot.class.path") != null) {
+			for(String s : System.getProperty("knot.class.path").split(File.pathSeparator)) {
+				try {
+					providerCL.addURL(new URL("file://" + s));
+				} catch (MalformedURLException e) {
+					Log.warn(LogCategory.GAME_PROVIDER, "Illegal classpath entry: " + s, e);
+				}
+			}
+		}
+		Log.error(LogCategory.GAME_PROVIDER, "App classpath: " + System.getProperty("java.class.path"));
+		Log.error(LogCategory.GAME_PROVIDER, "knot classpath: " + Arrays.toString(providerCL.getURLs()));
+		
+		Log.error(LogCategory.GAME_PROVIDER, "fabric.mod.json files in app classpath:");
+		try {
+			Collections.list(WildermythGameProvider.class.getClassLoader().getResources("fabric.mod.json")).forEach((json) -> {
+				Log.error(LogCategory.GAME_PROVIDER, json.toString());
+			});
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		Log.error(LogCategory.GAME_PROVIDER, "fabric.mod.json files in knot classpath:");
+		try {
+			Collections.list(providerCL.getResources("fabric.mod.json")).forEach((json) -> {
+				Log.error(LogCategory.GAME_PROVIDER, json.toString());
+			});
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
 	}
+	static volatile boolean initialized = false;
 	
 	private Arguments arguments;
 	private String entrypoint;
@@ -100,6 +135,10 @@ public class WildermythGameProvider implements GameProvider {
 	private static final GameTransformer TRANSFORMER = new GameTransformer(new LegacyPatch());
 	
 	public WildermythGameProvider() throws IOException, InterruptedException, TimeoutException {
+		if(initialized) {
+			throw new AssertionError();
+		}
+		initialized = true;
 		if(SystemProperties.isSet(SystemProperties.ADD_MODS) && Boolean.getBoolean(SystemProperties.DEVELOPMENT)) {
 			if(System.getProperty(SystemProperties.ADD_MODS).contains("/build/nested-jars")) {
 				Path projectDir = Path.of("").toRealPath().getParent();
@@ -234,6 +273,13 @@ public class WildermythGameProvider implements GameProvider {
 		
 		return getLaunchDirectory(arguments);
 	}
+	
+	@Override
+	public URLLoader getProviderCL() {
+		return new ProviderClassLoader();
+		//return providerCL;
+		//return null;
+	}
 
 	@Override
 	public boolean requiresUrlClassLoader() {
@@ -366,13 +412,14 @@ public class WildermythGameProvider implements GameProvider {
 	private void locateFilesystemDependencies() {
 		File lib = libDir.toFile();
 		for(File dep : lib.listFiles()) {
-			if(dep.getName().endsWith(".jar")) {
+			
+			/*if(dep.getName().endsWith(".jar")) {
 				miscGameLibraries.add(dep.toPath());
 				Log.log(LogLevel.TRACE, LogCategory.GAME_PROVIDER, "Adding " + dep);
 			}
 			else {
 				Log.log(LogLevel.TRACE, LogCategory.GAME_PROVIDER, "Skipping non-jar dependency " + dep);
-			}
+			}*/
 		}
 		
 		for(File dep : launchDir.toFile().listFiles()) {
@@ -391,7 +438,7 @@ public class WildermythGameProvider implements GameProvider {
 				}
 				else if (dep.getName().endsWith(".jar")) {
 					Log.log(LogLevel.TRACE, LogCategory.GAME_PROVIDER, "Adding " + dep.toPath());
-					miscGameLibraries.add(dep.toPath());
+					//miscGameLibraries.add(dep.toPath());
 				}
 			}
 			else {
@@ -424,6 +471,8 @@ public class WildermythGameProvider implements GameProvider {
 				}
 			}
 		}
+		
+		launcher.setValidParentClassPath(miscGameLibraries);
 		launcher.addToClassPath(gameJar);
 		
 		for(Path lib : miscGameLibraries) {
@@ -431,7 +480,6 @@ public class WildermythGameProvider implements GameProvider {
 		}
 		
 	}
-
 	@Override
 	public void launch(ClassLoader loader) {
 

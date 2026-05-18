@@ -2,7 +2,7 @@ plugins {
 	id 'java-library'
 	id 'eclipse'
 	id 'maven-publish'
-	id ('com.gradleup.shadow') version "8.3.3"
+	id ('com.gradleup.shadow') version "9.4.1"
 }
 
 repositories {
@@ -19,12 +19,15 @@ repositories {
 	mavenLocal()
 }
 
-sourceCompatibility = '17'
-targetCompatibility = '17'
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
 
 version = providerVersion
 group = "com.wildermods"
-archivesBaseName = "provider"
+base.archivesName = "provider"
 
 dependencies {
 
@@ -43,6 +46,10 @@ dependencies {
 	compileOnly libs.log4j.api
 	compileOnly libs.log4j.slf4j2.impl
 	
+	implementation(libs.gson) {
+		transitive = false
+	}
+	
 	implementation(libs.commons.lang) {
 		transitive = false
 	}
@@ -59,15 +66,13 @@ jar {
 }
 
 tasks.named('shadowJar', com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar) {
-	exclude '**/license.txt'
-	exclude '**/license'
-	exclude '**/notice.txt'
-	exclude '**/notice' 
-	exclude '**/LICENSE.txt'
-	exclude '**/LICENSE'
-	exclude '**/NOTICE.txt'
-	exclude '**/NOTICE' 
-	finalizedBy sourceJar
+    relocate 'com.google.gson', 'com.wildermods.shaded.gson'
+
+    // Exclude unnecessary license/notice files
+    exclude '**/license.txt', '**/license', '**/notice.txt', '**/notice'
+    exclude '**/LICENSE.txt', '**/LICENSE', '**/NOTICE.txt', '**/NOTICE'
+
+    finalizedBy sourceJar
 }
 
 ext.mavenLocalUrl = repositories.mavenLocal().url.toString()
@@ -85,7 +90,7 @@ tasks.register('checkArtifactExists') {
 		return
 	}
         def repoUrl = project.hasProperty('mavenRepoUrl') ? project.mavenRepoUrl : mavenLocalUrl
-        def artifactPath = "${repoUrl}/${project.group.replace('.', '/')}/${project.archivesBaseName}/${project.version}/${project.archivesBaseName}-${project.version}.jar"
+        def artifactPath = "${repoUrl}/${project.group.replace('.', '/')}/${project.base.archivesName.get()}/${project.version}/${project.base.archivesName.get()}-${project.version}.jar"
         logger.lifecycle("Checking if artifact exists at: $artifactPath")
         
         if (artifactPath.startsWith('file:/')) {
@@ -116,7 +121,7 @@ publishing {
         mavenJava(MavenPublication) {
             from components.java
             groupId = project.group
-            artifactId = project.archivesBaseName
+            artifactId = project.base.archivesName.get()
             version = project.version
 
             // Attach sources JAR to the publication
