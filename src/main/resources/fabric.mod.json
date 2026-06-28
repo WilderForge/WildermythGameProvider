@@ -1,0 +1,39 @@
+{
+	"schemaVersion": 1,
+	"id":"provider",
+	"version":"@providerVersion@",
+	
+	"name":"Provider",
+	"description": "The game provider that allows Fabric Loader to launch Wildermyth.",
+	"authors": [
+		"Gamebuster19901"
+	],
+	
+	"contact": {
+		"sources": "https://github.com/WilderForge/WildermythGameProvider",
+		"issues": "https://github.com/WilderForge/provider/WildermythGameProvider",
+		"homepage": "https://wildermods.com/WildermythGameProvider"
+	},
+	
+	"mixins": [],
+	"depends":{
+		"wildermyth": ">=1.16.0",
+		"java": ">=25"
+	},
+	"custom": {
+		"providerMod": true,
+		"forceOpens": {
+			"ALL-UNNAMED": [
+				"java.base/sun.net.www.protocol.jar",
+				"java.base/java.net"
+			]
+		},
+		"forceExports": {
+			
+		},
+		"credits":[
+			"[title]Programming[]",
+			"Gamebuster [discord]@Gamebuster"
+		]
+	}
+}

@@ -10,6 +10,10 @@ public class DummyClassLoader extends ClassLoader {
 		registerAsParallelCapable();
 	}
 	
+	public DummyClassLoader() {
+		super(null);
+	}
+	
 	@Override
 	public URL getResource(String name) {
 		return null;

@@ -43,6 +43,7 @@ import com.wildermods.provider.loader.util.OS;
 import com.wildermods.provider.patch.LegacyPatch;
 import com.wildermods.provider.services.CrashLogService;
 import com.wildermods.provider.util.logging.Logger;
+import com.wildermods.provider.internal.classload.ProviderJarURLStreamHandlerFactory;
 
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
@@ -73,8 +74,10 @@ public class WildermythGameProvider implements GameProvider {
 	private static final ProviderSettings SETTINGS;
 	private static final ProviderClassLoader providerCL = new ProviderClassLoader();
 	static {
+		URL.setURLStreamHandlerFactory(new ProviderJarURLStreamHandlerFactory());
 		Log.configureBuiltin(true, true);
 		ProviderSettings settings;
+		
 		try {
 			settings = ProviderSettings.fromJson(PROVIDER_SETTINGS_FILE);
 		} catch (JsonIOException | JsonSyntaxException | IOException e) {
@@ -274,12 +277,12 @@ public class WildermythGameProvider implements GameProvider {
 		return getLaunchDirectory(arguments);
 	}
 	
-	@Override
-	public URLLoader getProviderCL() {
-		return new ProviderClassLoader();
+	//@Override
+	//public URLLoader getProviderCL() {
+		//return new ProviderClassLoader();
 		//return providerCL;
 		//return null;
-	}
+	//}
 
 	@Override
 	public boolean requiresUrlClassLoader() {
@@ -487,6 +490,7 @@ public class WildermythGameProvider implements GameProvider {
 		
 		
 		try {
+			System.err.println("Loading " + targetClass + " with loader " + loader);
 			Class<?> c = loader.loadClass(targetClass);
 			Method m = c.getMethod("main", String[].class);
 			m.invoke(null, (Object) arguments.toArray());
