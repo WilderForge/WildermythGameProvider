@@ -97,7 +97,7 @@ tasks.register('checkArtifactExists') {
             // Handle file URLs
             def file = new File(new URI(artifactPath))
             if (file.exists()) {
-                throw new IllegalStateException("Artifact '${project.group}:${project.archivesBaseName}:${project.version}' already exists. Publishing aborted.")
+                throw new IllegalStateException("Artifact '${project.group}:${project.base.archivesName}:${project.version}' already exists. Publishing aborted.")
             }
         } else {
             // Handle HTTP URLs
