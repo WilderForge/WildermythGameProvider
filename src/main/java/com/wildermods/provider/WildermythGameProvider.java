@@ -52,7 +52,6 @@ import net.fabricmc.loader.impl.game.GameProvider;
 import net.fabricmc.loader.impl.game.GameProviderHelper;
 import net.fabricmc.loader.impl.game.patch.GameTransformer;
 import net.fabricmc.loader.impl.launch.FabricLauncher;
-import net.fabricmc.loader.impl.launch.knot.URLLoader;
 import net.fabricmc.loader.impl.metadata.BuiltinModMetadata;
 import net.fabricmc.loader.impl.metadata.ContactInformationImpl;
 import net.fabricmc.loader.impl.util.Arguments;
@@ -62,7 +61,7 @@ import net.fabricmc.loader.impl.util.log.LogCategory;
 import net.fabricmc.loader.impl.util.log.LogHandler;
 import net.fabricmc.loader.impl.util.log.LogLevel;
 import net.fabricmc.loader.impl.util.version.StringVersion;
-import static net.fabricmc.loader.impl.util.SystemProperties.ADD_MODS;;
+import static net.fabricmc.loader.impl.util.SystemProperties.ADD_MODS;
 
 public class WildermythGameProvider implements GameProvider {
 	
@@ -480,6 +479,16 @@ public class WildermythGameProvider implements GameProvider {
 		
 		for(Path lib : miscGameLibraries) {
 			launcher.addToClassPath(lib);
+		}
+		
+		String classpath = System.getProperty("knot.class.path", "");
+
+		for (String entry : classpath.split(
+		        java.util.regex.Pattern.quote(File.pathSeparator))) {
+		    if (!entry.isBlank()) {
+		        launcher.addToClassPath(
+		            Path.of(entry).toAbsolutePath().normalize());
+		    }
 		}
 		
 	}
